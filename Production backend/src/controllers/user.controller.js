@@ -7,8 +7,8 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
-        const accessToken = user.generateRefreshToken()
-        const refreshToken = user.generateAccessToken()
+        const accessToken = user.generateAccessToken;
+        const refreshToken = user.generateRefreshToken;
 
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
@@ -125,7 +125,9 @@ const loginUser = asyncHandler(async (req, res) => {
     // send cookie
 
     const { email, username, password } = req.body
-    if (!username || !email) {
+    console.log(email);
+    
+    if (!username && !email) {
         throw new ApiError(400, "username or password is required.")
     }
     const user = await User.findOne({
@@ -142,7 +144,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
-    const loggedInUser = await user.findById(user._id).select("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
@@ -150,8 +152,8 @@ const loginUser = asyncHandler(async (req, res) => {
     }
     return res
         .status(200)
-        .cookie("accessTokens:", accessToken, options)
-        .cookie("refreshToken:", refreshToken, options)
+        .cookie("accessTokens", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
                 200, {
