@@ -7,8 +7,8 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken;
-        const refreshToken = user.generateRefreshToken;
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
 
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
@@ -22,7 +22,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 
 
-const registerUser = asyncHandler(async (req, res, next) => {
+const registerUser = asyncHandler(async (req, res) => {
     //get user details from frontend.
     // validation-not empty
     //check user exist : username or email
@@ -134,8 +134,9 @@ const loginUser = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     })
     if (!user) {
-        throw new ApiError(400, "User does not exist")
+        throw new ApiError(404, "User does not exist")
     }
+
     const isPasswordValid = await user.isPasswordCorrect(password)
 
     if (!isPasswordValid) {
@@ -148,11 +149,11 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true,
+        secure: true
     }
     return res
         .status(200)
-        .cookie("accessTokens", accessToken, options)
+        .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
@@ -167,8 +168,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
-        req.user._id
-        ,
+        req.user._id,
         {
             $set:{
                 refreshToken:undefined
@@ -178,6 +178,7 @@ const logoutUser = asyncHandler(async (req, res) => {
             new:true
         }
     )
+    
     const options = {
         httpOnly: true,
         secure: true,
