@@ -241,58 +241,125 @@ const refreshAccessToken= asyncHandler(async(req,res)=>{
 
 })
 
-// const refreshAccessToken = asyncHandler(async (req, res) => {
-//     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+const changeCurrentPassword=asyncHandler(async(req,res)=>{
+    const {oldPassword,newPassword}=req.body
 
-//     if (!incomingRefreshToken) {
-//         throw new ApiError(401, "unauthorized request")
-//     }
+   const user= await User.findById(req.user?._id)
+    const isPasswordCorrect=await user.isPasswordCorrect(oldPassword)
 
-//     try {
-//         const decodedToken = jwt.verify(
-//             incomingRefreshToken,
-//             process.env.REFRESH_TOKEN_SECRET
-//         )
-    
-//         const user = await User.findById(decodedToken?._id)
-    
-//         if (!user) {
-//             throw new ApiError(401, "Invalid refresh token")
-//         }
-    
-//         if (incomingRefreshToken !== user?.refreshToken) {
-//             throw new ApiError(401, "Refresh token is expired or used")
-            
-//         }
-    
-//         const options = {
-//             httpOnly: true,
-//             secure: true
-//         }
-    
-//         const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
-    
-//         return res
-//         .status(200)
-//         .cookie("accessToken", accessToken, options)
-//         .cookie("refreshToken", newRefreshToken, options)
-//         .json(
-//             new ApiResponse(
-//                 200, 
-//                 {accessToken, refreshToken: newRefreshToken},
-//                 "Access token refreshed"
-//             )
-//         )
-//     } catch (error) {
-//         throw new ApiError(401, error?.message || "Invalid refresh token")
-//     }
+    if(!isPasswordCorrect){
+        throw new ApiError(400,"Invalid Old Password.")
+    }
+    user.password=newPassword
+   await user.save({validateBeforeSave:false})
 
-// })
+   return res
+   .status(200)
+   .json(new ApiResponse(200,{},"password Changed Successfully."))
 
+})
+
+const getCurrentUser=asyncHandler(async(req,res)=>{
+    return res
+    .status(200)
+    .json(200,req.user,"Current user fetched Successfully")
+})
+
+const updateAccountDetails=asyncHandler(async(req,res)=>{
+    const {fullName,email}=req.body
+    if(!fullName || !email){
+        throw new ApiError(400,"All fields are required.")
+    }
+
+  const user=  User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set:{
+                fullName,
+                email,
+            }
+        },
+        {new:true}
+    ).select("-password")
+    return res
+    .status(200)
+    .json(new ApiResponse(200,user,"Account Details Updated Successfully"))
+
+})
+
+const updateUserAvatar=asyncHandler(async(req,res)=>{
+  const avatarLocalpath=req.file?.path
+  
+  if(!avatarLocalpath){
+    throw new ApiError(400,"Avatar File is Missing.")
+  }
+
+ const avatar=await uploadOnCloudinary(avatarLocalpath)
+
+ if(!avatar.url){
+     throw new ApiError(400,"Error while uploading on Avatar")
+
+ }
+
+ const user=await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+        $set:{
+            avatar:avatar.url
+        }
+    },
+    {new:true}
+ ).select("-password")
+
+ return res
+.status(200)
+.json(
+    new ApiResponse(200,user,"Avatar image  Updated Successfully")
+)
+
+})
+
+
+const updateUserCoverImage=asyncHandler(async(req,res)=>{
+  const coverImageLocalpath=req.file?.path
+  
+  if(!coverImageLocalpath){
+    throw new ApiError(400,"Cover Image  File is Missing.")
+  }
+
+ const coverImage=await uploadOnCloudinary(coverImageLocalpath)
+
+ if(!coverImage.url){
+     throw new ApiError(400,"Error while uploading on cover Image")
+
+ }
+
+ const user=await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+        $set:{
+            coverImage:coverImage.url
+        }
+    },
+    {new:true}
+ ).select("-password")
+
+return res
+.status(200)
+.json(
+    new ApiResponse(200,user,"cover Image Updated Successfully")
+)
+
+})
 
 export {
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails,
+    updateUserAvatar,
+    updateUserCoverImage,
 }
