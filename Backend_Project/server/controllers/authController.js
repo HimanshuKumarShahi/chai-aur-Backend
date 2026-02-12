@@ -1,4 +1,4 @@
-import bctypt from 'bcryptjs'
+import bcrypt from "bcryptjs";
 import jwt from 'jsonwebtoken'
 import User from '../models/User.models.js'
 
@@ -25,14 +25,22 @@ export const registerUser = async (req, res) => {
             password: hashedPassword,
         });
 
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
         res.status(201).json({
             message: "User registered successfully",
+            token,
             user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
             },
         });
+
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }
@@ -46,7 +54,7 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: "Email and Password required." });
         }
 
-        const user = await User.findOne([email]);
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: "Invalid Credentials" });
         }
