@@ -26,18 +26,28 @@ export const deposit = async (req, res) => {
     }
 };
 
-export const withdraw=async(req,res)=>{
+export const withdraw = async (req, res) => {
     try {
-        const {amount}=req.body;
-        const account= await Account.findOne({userId:req.user._Id});
+        let { amount } = req.body;
+        
+        // 1. Force amount to be a Number immediately
+        amount = Number(amount); 
 
-        if (!account) return res.status(404).json({ message: "Account not found" });
-        if (account.balance < amount) return res.status(400).json({ message: "Insufficient funds" });
+        const account = await Account.findOne({ userId: req.user._id });
 
-       
-        account.balance -= Number(amount);
+        if (!account) {
+            return res.status(404).json({ message: "Account not found" });
+        }
+
+        // 2. Log values to console for debugging
+        console.log(`Current Balance: ${account.balance}, Requested Withdraw: ${amount}`);
+
+        if (account.balance < amount) {
+            return res.status(400).json({ message: `Insufficient funds. Your balance is ${account.balance}` });
+        }
+
+        account.balance -= amount;
         await account.save();
-
 
         await Transaction.create({
             accountId: account._id,
