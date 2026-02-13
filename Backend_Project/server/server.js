@@ -13,8 +13,6 @@ dotenv.config();
 
 const app = express();
 
-import cors from "cors";
-
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -22,7 +20,6 @@ app.use(cors({
   ],
   credentials: true
 }));
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -42,9 +39,7 @@ app.get("/api/private", protect, (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`✅ Server running on PORT ${PORT}`);
-  });
-}
 
+app.listen(PORT, () => {
+  console.log(`✅ Server running on PORT ${PORT}`);
+});
