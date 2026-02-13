@@ -13,16 +13,27 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// ✅ CORS (allow FRONTEND, not backend)
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://bankingsystem-seven.vercel.app",
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://chai-aur-backend-jrmt.onrender.com",
-    ],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // Postman / server-to-server
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// ✅ Fix preflight
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -51,7 +62,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on PORT ${PORT}`);
 });
 
+// Connect DB
 connectDB().catch((err) => {
   console.error("❌ MongoDB connection failed:", err.message);
 });
-
