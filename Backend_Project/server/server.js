@@ -18,7 +18,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://bankingsystem-seven.vercel.app",
+      "https://chai-aur-backend-jrmt.onrender.com",
     ],
     credentials: true,
   })
