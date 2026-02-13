@@ -1,37 +1,88 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// --- 👇 THESE ARE CRITICAL PLACEHOLDERS ---
-// If you delete these lines, the app will crash because 
-// <Register /> and <Dashboard /> won't exist!
-const Register = () => (
-  <div className="flex items-center justify-center h-screen bg-gray-100">
-    <h1 className="text-2xl font-bold">Register Page (Coming Soon)</h1>
-  </div>
-);
+import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-const Dashboard = () => (
-  <div className="flex items-center justify-center h-screen bg-green-100">
-    <h1 className="text-2xl font-bold">Dashboard (Coming Soon)</h1>
-  </div>
-);
-// ------------------------------------------
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 
-function App() {
+import Dashboard from "./pages/Dashboard";
+import Deposit from "./pages/Deposit";
+import Withdraw from "./pages/Withdraw";
+import Transfer from "./pages/Transfer";
+import Transactions from "./pages/Transactions";
+import Profile from "./pages/Profile";
+
+export default function App() {
   return (
-    <Routes>
-      {/* Redirect root URL to Login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      
-      {/* The Login Page */}
-      <Route path="/login" element={<Login />} />
-      
-      {/* The Placeholder Pages */}
-      <Route path="/register" element={<Register />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-    </Routes>
+    <BrowserRouter>
+      <div className="min-h-screen bg-[#0B0F1A] text-white">
+        <Navbar />
+
+        <Routes>
+          <Route path="/" element={<Home />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/deposit"
+            element={
+              <ProtectedRoute>
+                <Deposit />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/withdraw"
+            element={
+              <ProtectedRoute>
+                <Withdraw />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/transfer"
+            element={
+              <ProtectedRoute>
+                <Transfer />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/transactions"
+            element={
+              <ProtectedRoute>
+                <Transactions />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
-
-export default App;
