@@ -18,70 +18,74 @@ import Profile from "./pages/Profile";
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-[#0B0F1A] text-white">
+
+      <div className="flex min-h-screen w-full flex-col bg-[#0B0F1A] text-white antialiased">
         <Navbar />
 
-        <Routes>
-          <Route path="/" element={<Home />} />
+        
+        <main className="flex w-full flex-1 flex-col">
+          <Routes>
+            <Route path="/" element={<Home />} />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot" element={<ForgotPassword />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot" element={<ForgotPassword />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/deposit"
-            element={
-              <ProtectedRoute>
-                <Deposit />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/deposit"
+              element={
+                <ProtectedRoute>
+                  <Deposit />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/withdraw"
-            element={
-              <ProtectedRoute>
-                <Withdraw />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/withdraw"
+              element={
+                <ProtectedRoute>
+                  <Withdraw />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/transfer"
-            element={
-              <ProtectedRoute>
-                <Transfer />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/transfer"
+              element={
+                <ProtectedRoute>
+                  <Transfer />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/transactions"
-            element={
-              <ProtectedRoute>
-                <Transactions />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </main>
       </div>
     </BrowserRouter>
   );
