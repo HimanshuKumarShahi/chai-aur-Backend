@@ -1,9 +1,12 @@
 import Account from "../models/Account.models.js";
 import Transaction from "../models/Transaction.models.js";
+import connectDB from "../config/db.js"; // Import the connection utility
 
 // Deposit
 export const deposit = async (req, res) => {
   try {
+    await connectDB(); // Ensure connection before querying accounts
+
     const { accountId, amount } = req.body;
 
     if (!accountId || !amount || Number(amount) <= 0) {
@@ -38,6 +41,8 @@ export const deposit = async (req, res) => {
 // Withdraw
 export const withdraw = async (req, res) => {
   try {
+    await connectDB(); // Vital for critical balance updates
+
     const { accountId, amount } = req.body;
 
     if (!accountId || !amount || Number(amount) <= 0) {
@@ -76,6 +81,8 @@ export const withdraw = async (req, res) => {
 // Transfer
 export const transfer = async (req, res) => {
   try {
+    await connectDB(); // Required to prevent cross-account timeouts
+
     const { fromAccountId, toAccountNumber, amount } = req.body;
 
     if (!fromAccountId || !toAccountNumber || !amount || Number(amount) <= 0) {
@@ -123,6 +130,8 @@ export const transfer = async (req, res) => {
 // History
 export const myTransactions = async (req, res) => {
   try {
+    await connectDB(); // Ensure connection for fetching history
+    
     const accounts = await Account.find({ userId: req.user._id }).select("_id");
     const ids = accounts.map((a) => a._id);
 

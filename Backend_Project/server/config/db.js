@@ -1,31 +1,23 @@
 import mongoose from "mongoose";
+
 let isConnected = false;
 
 const connectDB = async () => {
- 
-  if (isConnected) {
-    console.log("=> Using existing database connection");
-    return;
-  }
+  if (isConnected) return;
 
- 
-  mongoose.set("bufferCommands", false); 
+  // Stop mongoose from waiting indefinitely if the connection is down
+  mongoose.set("bufferCommands", false);
 
   try {
-    console.log("=> Establishing new MongoDB connection...");
-    
     const db = await mongoose.connect(process.env.MONGO_URL, {
-      serverSelectionTimeoutMS: 5000, 
-      socketTimeoutMS: 45000,         
-      family: 4                       
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 10s
+      family: 4 // Use IPv4 for faster DNS lookup in cloud envs
     });
-
     isConnected = db.connections[0].readyState;
-    console.log("✅ New MongoDB Connection Established");
+    console.log("✅ MongoDB Connected");
   } catch (error) {
-    console.error("❌ MongoDB Connection Error:", error.message);
-    
-    throw new Error("Database connection failed");
+    console.error("❌ Connection Error:", error.message);
+    throw error; // Throw so the controller catches it
   }
 };
 

@@ -1,4 +1,5 @@
 import Account from "../models/Account.models.js";
+import connectDB from "../config/db.js"; // Import the connection logic
 
 const generateAccountNumber = () => {
   return Math.floor(1000000000 + Math.random() * 9000000000);
@@ -7,6 +8,8 @@ const generateAccountNumber = () => {
 // CREATE
 export const createAccount = async (req, res) => {
   try {
+    await connectDB(); // Always connect first
+
     const { accountType } = req.body;
 
     const account = await Account.create({
@@ -25,6 +28,8 @@ export const createAccount = async (req, res) => {
 // LIST MY ACCOUNTS (for dropdown)
 export const getMyAccounts = async (req, res) => {
   try {
+    await connectDB(); // Ensure connection before fetching
+
     const accounts = await Account.find({ userId: req.user._id }).sort({
       createdAt: -1,
     });
@@ -38,6 +43,8 @@ export const getMyAccounts = async (req, res) => {
 // GET BALANCE (single account)
 export const getBalance = async (req, res) => {
   try {
+    await connectDB(); // Ensure connection before finding
+
     const { accountId } = req.query;
 
     if (!accountId) {

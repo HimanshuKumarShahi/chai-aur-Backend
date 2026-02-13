@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.models.js";
+import connectDB from "../config/db.js"; // Ensure this is imported
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -8,6 +9,8 @@ const generateToken = (id) => {
 
 export const registerUser = async (req, res) => {
   try {
+    await connectDB(); // Connect to DB first
+
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
@@ -38,18 +41,22 @@ export const registerUser = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    // Catching error prevents the "Unhandled Rejection" crash
+    res.status(500).json({ message: "Registration failed", error: error.message });
   }
 };
 
 export const loginUser = async (req, res) => {
   try {
+    await connectDB(); // Connect to DB first
+
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and Password required." });
     }
 
+    // The timeout happened here because DB wasn't ready
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -70,10 +77,16 @@ export const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    // Correctly sends 500 status instead of crashing
+    res.status(500).json({ message: "Login failed", error: error.message });
   }
 };
 
 export const getMe = async (req, res) => {
-  res.status(200).json({ user: req.user });
+  try {
+    await connectDB(); // Always connect first
+    res.status(200).json({ user: req.user });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
