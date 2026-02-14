@@ -19,7 +19,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const res = await api.post("/api/auth/login", form);
+      const res = await api.post("/auth/login", form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");

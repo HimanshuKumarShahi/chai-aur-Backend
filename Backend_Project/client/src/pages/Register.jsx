@@ -27,7 +27,7 @@ export default function Register() {
     setError(null);
 
     try {
-      const res = await api.post("/api/auth/register", form);
+      const res = await api.post("/auth/register", form);
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
