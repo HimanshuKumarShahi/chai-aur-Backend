@@ -17,7 +17,6 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    alert("API URL = " + import.meta.env.VITE_API_URL);
 
     try {
       const res = await api.post("/auth/login", form);
