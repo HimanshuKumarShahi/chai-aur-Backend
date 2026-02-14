@@ -62,7 +62,6 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on PORT ${PORT}`);
 });
 
-// Connect DB
 connectDB().catch((err) => {
   console.error("❌ MongoDB connection failed:", err.message);
 });
