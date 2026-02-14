@@ -25,6 +25,7 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
 
     try {
       const res = await api.post("/auth/register", form);
