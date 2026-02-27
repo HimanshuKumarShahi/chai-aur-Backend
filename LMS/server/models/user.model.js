@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema(
             unique: [true, "Email already Exists"],
             trim: true,
             lowercase: true,
-            match: [/^(?!\\.)(?!.*\\.\\.)([a-z0-9_+\\-\\.]*[a-z0-9_+\\-])@([a-z0-9][a-z0-9-]*\\.)+[a-z]{2,}$/, "Invalid Email Address."]
+            match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please fill a valid email address"]
         },
         name: {
             type: String,
@@ -24,12 +24,12 @@ const userSchema = new mongoose.Schema(
     }, { timestamps: true }
 );
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
     if (!this.isModified("password")) {
-        return next();
+        return
     }
     this.password = await bcrypt.hash(this.password, 12);
-    next();
+    
 })
 
 userSchema.methods.comparePassword = async function (Password) {

@@ -10,16 +10,24 @@ export const registerUser = async (req, res) => {
         }
         const userExists = await User.findOne({ email });
         if (userExists) {
-            return res.status(400).json({ success: false, message: "User with this email already exists" });
+            return res.status(422).json({ success: false, message: "User with this email already exists" });
         }
         const user = await User.create({
             name,
             email,
             password
         });
+
+        const token=jwt.sign(
+            { id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRE || '7d',
+        })
+        
+        res.cookie("token",token)
         res.status(201).json({
             success: true,
             message: "User Registered Successfully",
+            token,
             user: {
                 _id: user._id,
                 name: user.name,
@@ -28,7 +36,7 @@ export const registerUser = async (req, res) => {
         });
     } catch (err) {
         console.error("Error in RegisterUser:", err);
-        res.status(500).json({ success: false, message: "Server Error" });
+        res.status(500).json({ success: false, message: "Server Error",err });
     }
 };
 
