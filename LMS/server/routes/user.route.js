@@ -3,9 +3,10 @@ import { registerUser,loginUser} from '../controllers/user.controller.js'
 
 const router=express.Router();
 
-// post/api/auth/register
 
+// post/api/auth/register
 router.post('/register',registerUser)
-router.post('/loginUser',loginUser)
+// post/api/auth/login
+router.post('/login',loginUser)
 
 export default router;

@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import jwt from 'jsonwebtoken'
 
+
+// Register user (POST/api/auth/register)
 export const registerUser = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -40,6 +42,9 @@ export const registerUser = async (req, res) => {
     }
 };
 
+
+
+// Login user (POST/api/auth/login)
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -51,7 +56,7 @@ export const loginUser = async (req, res) => {
         const user = await User.findOne({ email }).select("+password");
 
         if (!user) {
-            return res.status(401).json({ success: false, message: "Invalid credentials." });
+            return res.status(401).json({ success: false, message: "Invalid credentials. Please input email and password." });
         }
 
         const isMatch = await user.comparePassword(password);
@@ -59,17 +64,19 @@ export const loginUser = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid Credentials."
+                message: "Invalid Password ."
             })
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_EXPIRE,
-        });
-
+        const token=jwt.sign(
+            { id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRE || '7d',
+        })
+        
+        res.cookie("token",token)
         res.status(200).json({
             success: true,
-            message: "Logged in successfully.",
+            message: "User Login Successfully",
             token,
             user: {
                 _id: user._id,
