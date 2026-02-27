@@ -3,10 +3,6 @@ import bcrypt from 'bcryptjs'
 
 const userSchema = new mongoose.Schema(
     {
-        name: {
-            type: String,
-            required: [true, "Name is required for creating an Account."]
-        },
         email: {
             type: String,
             required: [true, "Email is required for create user"],
@@ -15,16 +11,15 @@ const userSchema = new mongoose.Schema(
             lowercase: true,
             match: [/^(?!\\.)(?!.*\\.\\.)([a-z0-9_+\\-\\.]*[a-z0-9_+\\-])@([a-z0-9][a-z0-9-]*\\.)+[a-z]{2,}$/, "Invalid Email Address."]
         },
+        name: {
+            type: String,
+            required: [true, "Name is required for creating an Account."]
+        },
         password: {
             type: String,
             required: [true, "Password is required for creating an account"],
-            minlength: [6, "Password must be 6 or character"],
+            minlength: [6, "Password must be contain 6 or more character"],
             select: false
-        },
-        role: {
-            type: String,
-            enum: ["student", "teacher", "admin"],
-            default: "student"
         },
     }, { timestamps: true }
 );
@@ -37,8 +32,8 @@ userSchema.pre("save", async function (next) {
     next();
 })
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = async function (Password) {
+    return await bcrypt.compare(Password, this.password);
 }
 
 const User = mongoose.model("User", userSchema);
