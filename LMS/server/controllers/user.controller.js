@@ -1,7 +1,6 @@
 import User from "../models/user.model.js";
 import jwt from 'jsonwebtoken'
 import sendEmail from "../config/email.js";
-import crypto from "crypto";
 
 
 // Register user (POST/api/auth/register)
@@ -12,54 +11,87 @@ export const registerUser = async (req, res) => {
         if (!name || !email || !password) {
             return res.status(400).json({
                 success: false,
-                message: "All fields required"
+                message: "All fields are required"
             });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
 
-        const userExists = await User.findOne({ email: normalizedEmail });
-        if (userExists) {
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: "Email already exists"
+                message: "Email already registered"
             });
         }
 
         const user = await User.create({
             name,
             email: normalizedEmail,
-            password,
-            isVerified: false
+            password
         });
 
-        const rawToken = crypto.randomBytes(32).toString("hex");
-
-        user.verificationToken = crypto
-            .createHash("sha256")
-            .update(rawToken)
-            .digest("hex");
-
-        user.verificationTokenExpire = Date.now() + 15 * 60 * 1000;
-
-        await user.save();
-
-        // Direct backend verification link
-        const verifyURL = `http://localhost:5000/api/auth/verify/${rawToken}`;
-
+        // Send Thank You Email
         await sendEmail({
             email: user.email,
-            subject: "Verify Your Email",
-            message: `Click this link to verify your email:\n\n${verifyURL}`
+            subject: "Welcome to LMS App 🎓",
+            html: `
+  <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px;">
+    <div style="max-width: 600px; background: #ffffff; margin: auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+
+      <h2 style="color: #2c3e50; text-align: center;">Welcome to LMS App</h2>
+
+      <p style="font-size: 16px; color: #555;">
+        Hello <strong>${user.name}</strong>,
+      </p>
+
+      <p style="font-size: 16px; color: #555;">
+        Your account has been successfully created. We're excited to have you join our learning community.
+      </p>
+
+      <p style="font-size: 16px; color: #555;">
+        You can now:
+      </p>
+
+      <ul style="font-size: 16px; color: #555;">
+        <li>Access your dashboard</li>
+        <li>Enroll in courses</li>
+        <li>Track your progress</li>
+        <li>Upgrade your skills</li>
+      </ul>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="http://localhost:5173/login"
+           style="background-color: #3498db; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px;">
+           Login Now
+        </a>
+      </div>
+
+      <p style="font-size: 14px; color: #888;">
+        If you did not create this account, please contact support immediately.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+
+      <p style="font-size: 12px; color: #aaa; text-align: center;">
+        © ${new Date().getFullYear()} LMS App. All rights reserved.
+      </p>
+
+    </div>
+  </div>
+  `
         });
 
         res.status(201).json({
             success: true,
-            message: "Registered. Please check your email to verify."
+            message: "Registration successful. Welcome email sent."
         });
 
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 
@@ -125,15 +157,12 @@ export const loginUser = async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                message: "Please provide email and password."
+                message: "Email and password required"
             });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+password");
 
-        const user = await User.findOne({ email: normalizedEmail }).select("+password");
-
-        // 1️⃣ Check if user exists
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -141,15 +170,6 @@ export const loginUser = async (req, res) => {
             });
         }
 
-        // 2️⃣ Check email verification
-        if (!user.isVerified) {
-            return res.status(401).json({
-                success: false,
-                message: "Please verify your email before logging in."
-            });
-        }
-
-        // 3️⃣ Compare password
         const isMatch = await user.comparePassword(password);
 
         if (!isMatch) {
@@ -159,27 +179,22 @@ export const loginUser = async (req, res) => {
             });
         }
 
-        // 4️⃣ Generate JWT
         const token = jwt.sign(
             { id: user._id },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRE || "7d" }
+            { expiresIn: "7d" }
         );
 
-        // 5️⃣ Send secure cookie
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        // 6️⃣ Return user data only (REMOVE token from JSON)
         res.status(200).json({
             success: true,
             message: "Login successful",
             user: {
-                _id: user._id,
+                id: user._id,
                 name: user.name,
                 email: user.email
             }

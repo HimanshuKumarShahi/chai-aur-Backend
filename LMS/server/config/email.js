@@ -10,10 +10,10 @@ const sendEmail = async (options) => {
     });
 
     await transporter.sendMail({
-        from: `"LMS App by Himanshu" <${process.env.EMAIL_USER}>`,
+        from: `"LMS App" <${process.env.EMAIL_USER}>`,
         to: options.email,
         subject: options.subject,
-        text: options.message
+        html: options.html
     });
 };
 
