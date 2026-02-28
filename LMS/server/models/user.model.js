@@ -21,6 +21,18 @@ const userSchema = new mongoose.Schema(
             minlength: [6, "Password must be contain 6 or more character"],
             select: false
         },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user"
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
+
+        verificationToken: String,
+        verificationTokenExpire: Date,
     }, { timestamps: true }
 );
 
@@ -29,12 +41,25 @@ userSchema.pre("save", async function () {
         return
     }
     this.password = await bcrypt.hash(this.password, 12);
-    
+
 })
 
 userSchema.methods.comparePassword = async function (Password) {
     return await bcrypt.compare(Password, this.password);
 }
+
+userSchema.methods.generateVerificationToken = function () {
+    const token = crypto.randomBytes(32).toString("hex");
+
+    this.verificationToken = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
+    this.verificationTokenExpire = Date.now() + 10 * 60 * 1000; 
+
+    return token;
+};
 
 const User = mongoose.model("User", userSchema);
 

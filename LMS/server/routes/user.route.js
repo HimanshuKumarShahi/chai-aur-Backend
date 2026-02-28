@@ -1,5 +1,5 @@
 import express from 'express'
-import { registerUser,loginUser, logoutUser, Dashboard} from '../controllers/user.controller.js'
+import { registerUser,loginUser, logoutUser, Dashboard,verifyEmail} from '../controllers/user.controller.js'
 import { isAuthenticate } from '../middleware/auth.middleware.js';
 const router=express.Router();
 
@@ -10,6 +10,8 @@ router.post('/register',registerUser)
 router.post('/login',loginUser)
 
 router.post('/logout',logoutUser)
+
+router.get('/verify/:token', verifyEmail)
 
 router.get('/user',isAuthenticate,Dashboard)
 
