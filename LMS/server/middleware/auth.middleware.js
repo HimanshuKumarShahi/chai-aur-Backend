@@ -21,6 +21,6 @@ export const isAuthenticate=async (req,res,next)=>{
         next();
 
     }catch(err){
-        res.status(401).json({success:fale , message:"Invalid or Session Time UP. Please log in again."})
+        res.status(401).json({success:false , message:"Invalid or Session Time UP. Please log in again."})
     }
 };

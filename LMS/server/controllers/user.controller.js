@@ -20,12 +20,12 @@ export const registerUser = async (req, res) => {
             password
         });
 
-        const token=jwt.sign(
+        const token = jwt.sign(
             { id: user._id }, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRE || '7d',
         })
-        
-        res.cookie("token",token)
+
+        res.cookie("token", token)
         res.status(201).json({
             success: true,
             message: "User Registered Successfully",
@@ -38,7 +38,7 @@ export const registerUser = async (req, res) => {
         });
     } catch (err) {
         console.error("Error in RegisterUser:", err);
-        res.status(500).json({ success: false, message: "Server Error",err });
+        res.status(500).json({ success: false, message: "Server Error", err });
     }
 };
 
@@ -68,12 +68,17 @@ export const loginUser = async (req, res) => {
             })
         }
 
-        const token=jwt.sign(
+        const token = jwt.sign(
             { id: user._id }, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRE || '7d',
         })
-        
-        res.cookie("token",token)
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict', 
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
         res.status(200).json({
             success: true,
             message: "User Login Successfully",
@@ -91,3 +96,22 @@ export const loginUser = async (req, res) => {
     }
 
 };
+
+export const logoutUser = (req, res) => {
+    res.cookie("token", null, {
+        expires: new Date(Date.now()),
+        httpOnly: true,
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+    });
+};
+
+export const Dashboard=async(req,res)=>{
+    res.status(200).json({
+        success:true,
+        user:req.user
+    });
+}
