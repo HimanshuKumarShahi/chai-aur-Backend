@@ -60,12 +60,6 @@ export const registerUser = async (req, res) => {
         <li>Upgrade your skills</li>
       </ul>
 
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="http://localhost:5173/login"
-           style="background-color: #3498db; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px;">
-           Login Now
-        </a>
-      </div>
 
       <p style="font-size: 14px; color: #888;">
         If you did not create this account, please contact support immediately.
