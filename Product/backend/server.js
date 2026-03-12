@@ -1,11 +1,9 @@
+import "dotenv/config"; // THIS MUST BE THE VERY FIRST LINE
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 
 import connectDB from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
-
-dotenv.config();
 
 connectDB();
 
@@ -16,12 +14,8 @@ app.use(express.json());
 
 app.use("/api/products", productRoutes);
 
-app.get("/", (req, res) => {
-  res.send("API running");
-});
-
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log("Server running on", PORT);
+  console.log(`Server running on port ${PORT}`);
 });
