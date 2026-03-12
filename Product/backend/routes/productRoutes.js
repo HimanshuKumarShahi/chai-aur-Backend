@@ -1,12 +1,11 @@
 import express from "express";
-import multer from "multer";
 import { createProduct, getProducts } from "../controllers/productController.js";
+import upload from "../utils/upload.js";
 
 const router = express.Router();
 
-const upload = multer({ dest: "uploads/" });
+router.get("/", getProducts);
 
 router.post("/", upload.single("image"), createProduct);
-router.get("/", getProducts);
 
 export default router;
