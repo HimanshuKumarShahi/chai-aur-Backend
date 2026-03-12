@@ -1,40 +1,39 @@
 import Product from "../models/Product.js";
 import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
 
 export const createProduct = async (req, res) => {
-
   try {
+    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
 
-    if (!req.file) {
-      return res.status(400).json({ message: "Image required" });
-    }
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "ecommerce_products"
+    });
 
-    const upload = await cloudinary.uploader.upload(req.file.path);
+    // Delete local file after successful upload
+    fs.unlinkSync(req.file.path);
 
     const product = await Product.create({
-
       title: req.body.title,
       description: req.body.description,
       price: req.body.price,
-      category: req.body.category,
-      image: upload.secure_url
-
+      image: result.secure_url,
+      category: req.body.category
     });
 
-    res.json(product);
-
+    res.status(201).json(product);
   } catch (error) {
-
+    console.error(error);
     res.status(500).json({ message: error.message });
-
   }
-
 };
 
 export const getProducts = async (req, res) => {
-
-  const products = await Product.find().sort({ createdAt: -1 });
-
-  res.json(products);
-
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }); // Newest first
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
