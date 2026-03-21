@@ -1,3 +1,16 @@
+import express from 'express';
+import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
+import User from '../models/User.js';
+
+const router = express.Router();
+
+router.get('/test-auth', ClerkExpressRequireAuth(), (req, res) => {
+    res.status(200).json({
+        message: "Auth working",
+        userId: req.auth.userId
+    });
+});
+
 router.post('/sync', ClerkExpressRequireAuth(), async (req, res) => {
     try {
         const { email, firstName, lastName } = req.body;
@@ -11,9 +24,8 @@ router.post('/sync', ClerkExpressRequireAuth(), async (req, res) => {
                 email,
                 firstName,
                 lastName,
-                role: 'customer' // default
+                role: 'customer'
             });
-
             await user.save();
         }
 
@@ -23,3 +35,5 @@ router.post('/sync', ClerkExpressRequireAuth(), async (req, res) => {
         res.status(500).json({ message: "Sync error" });
     }
 });
+
+export default router; 
