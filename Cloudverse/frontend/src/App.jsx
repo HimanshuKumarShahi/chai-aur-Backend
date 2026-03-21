@@ -1,113 +1,61 @@
-import { useEffect } from "react"; // <-- 1. Import useEffect
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useAuth } from "@clerk/clerk-react";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { useUser, useAuth, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react"; // <-- Import RedirectToSignIn
+
+import Home from "./pages/Home";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   const { user } = useUser(); 
   const { getToken } = useAuth(); 
 
-  // --- NEW: Automatically sync user to MongoDB when they log in ---
+  // Background Sync
   useEffect(() => {
-    const syncUserToDatabase = async () => {
-      // Only run this if the user is actually logged in
+    const syncUser = async () => {
       if (user) {
         try {
           const token = await getToken();
-          
-          // Call the backend to save the user
           await fetch('http://localhost:5000/api/users/sync', {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email: user.primaryEmailAddress?.emailAddress,
-              firstName: user.firstName,
-              lastName: user.lastName
+              firstName: user.firstName, lastName: user.lastName
             })
           });
-          
-          console.log("User sync request sent to backend!");
-        } catch (error) {
-          console.error("Failed to sync user:", error);
-        }
+        } catch (error) { console.error("Sync failed:", error); }
       }
     };
-
-    syncUserToDatabase();
-  }, [user, getToken]); // This runs every time the 'user' logs in
-
-  // --- The function to test the backend connection ---
-  const testBackendConnection = async () => {
-    try {
-      const token = await getToken();
-      console.log("MY CLERK TOKEN:", token);
-
-      const response = await fetch('http://localhost:5000/api/users/test-auth', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`, 
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        alert("✅ Connection Secure! Check console for token.");
-        console.log("Backend response:", data);
-      } else {
-        alert("❌ Unauthorized!");
-      }
-
-    } catch (error) {
-      console.error("Error testing backend:", error);
-    }
-  };
+    syncUser();
+  }, [user, getToken]);
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      
-      {/* --- THE NAVBAR --- */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
-        <h2>Cloudverse</h2>
+    <BrowserRouter>
+      {/* Dev Menu */}
+      <div className="bg-gray-800 text-white p-2 text-center text-sm flex gap-4 justify-center">
+        <span>Dev Menu:</span>
+        <Link to="/" className="hover:text-red-400 underline">Customer View (Home)</Link>
+        <Link to="/admin" className="hover:text-red-400 underline">Admin View</Link>
+      </div>
+
+      <Routes>
+        {/* Public Route: Anyone can see the home page */}
+        <Route path="/" element={<Home />} />
         
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button style={{ padding: '8px 16px', cursor: 'pointer', background: 'black', color: 'white' }}>
-              Log In
-            </button>
-          </SignInButton>
-        </SignedOut>
-
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
-      </header>
-
-      {/* --- MAIN CONTENT --- */}
-      <main style={{ marginTop: '20px' }}>
-        <SignedIn>
-          <h1>Welcome back to Cloudverse, {user?.firstName}!</h1>
-          <p>Ready to order some food?</p>
-          
-          <br />
-          <button 
-            onClick={testBackendConnection} 
-            style={{ padding: '10px 20px', background: 'blue', color: 'white', cursor: 'pointer', border: 'none', borderRadius: '5px' }}
-          >
-            Test Secure Backend Connection
-          </button>
-
-        </SignedIn>
-
-        <SignedOut>
-          <h1>Welcome to Cloudverse</h1>
-          <p>Please log in to view the menu and place an order.</p>
-        </SignedOut>
-      </main>
-
-    </div>
+        {/* Protected Route: Only logged-in users can see the Admin Dashboard */}
+        <Route path="/admin" element={
+          <>
+            <SignedIn>
+              <AdminDashboard />
+            </SignedIn>
+            <SignedOut>
+              {/* If they aren't logged in, instantly redirect them to the Clerk login */}
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        } />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
