@@ -1,159 +1,201 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Search, ShoppingBag, Star, Clock, Plus, Minus, ChevronRight, X } from "lucide-react";
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Filter & Search States
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [showVegOnly, setShowVegOnly] = useState(false);
+  const [sortBy, setSortBy] = useState("default");
 
-  // High-quality Pexels fallback images for a premium look
-  const fallbackImages = [
-    "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?auto=compress&cs=tinysrgb&w=800", // Burger
-    "https://images.pexels.com/photos/1146760/pexels-photo-1146760.jpeg?auto=compress&cs=tinysrgb&w=800", // Pizza
-    "https://images.pexels.com/photos/1640772/pexels-photo-1640772.jpeg?auto=compress&cs=tinysrgb&w=800", // Plated food
-    "https://images.pexels.com/photos/2087748/pexels-photo-2087748.jpeg?auto=compress&cs=tinysrgb&w=800", // Tacos
-    "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=800"  // Pancakes
-  ];
+  // Real-App Cart State
+  const [cart, setCart] = useState({}); // { restaurantId: quantity }
+  const [lastAdded, setLastAdded] = useState(null);
 
-  // Dummy categories for the Swiggy-like top scroll bar
   const categories = [
-    { name: "Pizza", emoji: "🍕" }, { name: "Burger", emoji: "🍔" },
-    { name: "Biryani", emoji: "🍗" }, { name: "Healthy", emoji: "🥗" },
-    { name: "Desserts", emoji: "🍰" }, { name: "Chinese", emoji: "🍜" },
-    { name: "Drinks", emoji: "🥤" }, { name: "South Indian", emoji: "🥞" }
+    { name: "All", emoji: "🏠" },
+    { name: "Pizza", emoji: "🍕" },
+    { name: "Burger", emoji: "🍔" },
+    { name: "Biryani", emoji: "🍗" },
+    { name: "Healthy", emoji: "🥗" },
+    { name: "Desserts", emoji: "🍰" },
+    { name: "Chinese", emoji: "🍜" }
   ];
 
   useEffect(() => {
+    // Simulated API Fetch
     fetch("http://localhost:5000/api/restaurants")
       .then(res => res.json())
       .then(data => {
         setRestaurants(data);
+        setFilteredRestaurants(data);
         setIsLoading(false);
       })
-      .catch(err => {
-        console.error("Failed to fetch", err);
-        setIsLoading(false);
-      });
+      .catch(() => setIsLoading(false));
   }, []);
 
-  return (
-    <div className="w-full">
-      
-      {/* --- HERO / SEARCH SECTION --- */}
-      <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-3xl p-8 md:p-12 mb-12 shadow-sm border border-red-100 flex flex-col items-center text-center">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
-          Craving something <span className="text-red-600">delicious?</span>
-        </h1>
-        
-        {/* Search Bar */}
-        <div className="w-full max-w-2xl flex items-center bg-white rounded-2xl shadow-md overflow-hidden p-2 border border-gray-100 focus-within:ring-2 focus-within:ring-red-500 transition-all">
-          <span className="pl-4 text-xl">🔍</span>
-          <input 
-            type="text" 
-            placeholder="Search for restaurants, cuisines, or dishes..." 
-            className="w-full px-4 py-3 outline-none text-gray-700 bg-transparent font-medium"
-          />
-          <button className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-colors">
-            Search
-          </button>
-        </div>
-      </div>
+  // Composite Filter Logic
+  useEffect(() => {
+    let result = [...restaurants];
+    if (searchTerm) {
+      result = result.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    if (activeCategory !== "All") {
+      result = result.filter(r => r.cuisine?.some(c => c.toLowerCase().includes(activeCategory.toLowerCase())));
+    }
+    if (showVegOnly) result = result.filter(r => r.isVeg);
+    if (sortBy === "lowToHigh") result.sort((a, b) => a.avgPrice - b.avgPrice);
+    if (sortBy === "highToLow") result.sort((a, b) => b.avgPrice - a.avgPrice);
+    setFilteredRestaurants(result);
+  }, [searchTerm, activeCategory, showVegOnly, sortBy, restaurants]);
 
-      {/* --- QUICK CATEGORIES (Mind to eat?) --- */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">What's on your mind?</h2>
-        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-          {categories.map((cat, index) => (
-            <div key={index} className="flex flex-col items-center gap-2 min-w-[80px] cursor-pointer group">
-              <div className="w-20 h-20 bg-white rounded-full shadow-sm flex items-center justify-center text-4xl border border-gray-100 group-hover:shadow-md group-hover:-translate-y-1 transition-all">
-                {cat.emoji}
-              </div>
-              <span className="font-semibold text-gray-700 text-sm group-hover:text-red-600">{cat.name}</span>
-            </div>
+  // Realistic Cart Functions
+  const updateCart = (id, delta, name) => {
+    setCart(prev => {
+      const newQty = (prev[id] || 0) + delta;
+      if (newQty <= 0) {
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [id]: newQty };
+    });
+    if (delta > 0) {
+      setLastAdded(name);
+      setTimeout(() => setLastAdded(null), 2000);
+    }
+  };
+
+  const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-32">
+      {/* --- STICKY HEADER --- */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
+              <span className="bg-orange-500 text-white p-1 rounded-lg">CV</span>
+              Cloudverse <span className="text-orange-500 hidden sm:inline">Muzaffarpur</span>
+            </h1>
+          </div>
+          
+          <div className="relative w-1/3 max-w-sm hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search for food..." 
+              className="w-full bg-slate-100 border-none rounded-xl py-2 pl-10 focus:ring-2 focus:ring-orange-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-4">
+             <button className="p-2 hover:bg-slate-100 rounded-full transition-colors relative">
+                <ShoppingBag size={22} className="text-slate-700" />
+                {cartCount > 0 && <span className="absolute top-0 right-0 bg-orange-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>}
+             </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 mt-8">
+        {/* --- CATEGORY PILLS --- */}
+        <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
+          {categories.map(cat => (
+            <button
+              key={cat.name}
+              onClick={() => setActiveCategory(cat.name)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full whitespace-nowrap font-bold text-sm transition-all border
+                ${activeCategory === cat.name ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}
+            >
+              <span>{cat.emoji}</span> {cat.name}
+            </button>
           ))}
         </div>
-      </div>
 
-      {/* --- RESTAURANT GRID SECTION --- */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-4">
-          Top restaurants in Patna
-        </h2>
-
-        {isLoading ? (
-          // Skeleton Loading State
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="animate-pulse flex flex-col gap-4">
-                <div className="bg-gray-200 h-56 rounded-2xl w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        ) : restaurants.length === 0 ? (
-          // Empty State
-          <div className="text-center py-20">
-            <span className="text-6xl mb-4 block">🏪</span>
-            <h3 className="text-2xl font-bold text-gray-800">No restaurants yet</h3>
-            <p className="text-gray-500 mt-2">Check back later or add some from the Admin dashboard!</p>
-          </div>
-        ) : (
-          // The Actual Grid
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {restaurants.map((r, index) => {
-              // Pick a fallback image based on the index if the restaurant image is missing or too short
-              const imageSrc = r.image && r.image.length > 10 ? r.image : fallbackImages[index % fallbackImages.length];
-              
-              // Generate a mock rating between 3.8 and 4.9 for display
-              const rating = (Math.random() * (4.9 - 3.8) + 3.8).toFixed(1);
-
-              return (
-                // Wrap the whole card in a Link. Next step will be creating the /restaurant/:id page!
-                <Link to={`/restaurant/${r._id}`} key={r._id} className="group cursor-pointer">
-                  
-                  {/* Image Container */}
-                  <div className="relative overflow-hidden rounded-2xl shadow-sm mb-4 h-56">
-                    <img 
-                      src={imageSrc} 
-                      alt={r.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-in-out" 
-                    />
-                    {/* Dark gradient overlay at the bottom for text contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    
-                    {/* Time/Offer Badge */}
-                    <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-extrabold text-gray-800 shadow-md">
-                      30-40 MINS
-                    </div>
+        {/* --- RESTAURANT GRID --- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-4">
+          {isLoading ? (
+            [...Array(8)].map((_, i) => <div key={i} className="h-64 bg-white rounded-3xl animate-pulse" />)
+          ) : (
+            filteredRestaurants.map(r => (
+              <div key={r._id} className="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500">
+                <Link to={`/restaurant/${r._id}`} className="block relative h-48 overflow-hidden">
+                  <img src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+                    <Star size={12} className="text-orange-500" fill="currentColor" />
+                    <span className="text-xs font-black">4.2</span>
                   </div>
-
-                  {/* Info Container */}
-                  <div className="px-1">
-                    <div className="flex justify-between items-start mb-1">
-                      <h2 className="text-xl font-bold text-gray-900 truncate pr-2" title={r.name}>
-                        {r.name}
-                      </h2>
-                      {/* Rating Badge */}
-                      <div className="flex items-center gap-1 bg-green-700 text-white px-1.5 py-0.5 rounded text-sm font-bold shadow-sm shrink-0">
-                        {rating} <span className="text-[10px]">★</span>
-                      </div>
-                    </div>
-                    
-                    <p className="text-gray-500 text-sm font-medium line-clamp-1 mb-1">
-                      {r.cuisine && r.cuisine.length > 0 ? r.cuisine.join(", ") : "North Indian, Fast Food"}
-                    </p>
-                    <p className="text-gray-400 text-sm line-clamp-1 truncate">
-                      📍 {r.address}
-                    </p>
-                  </div>
-
+                  {r.isVeg && <div className="absolute top-4 right-4 w-4 h-4 bg-white border border-green-600 flex items-center justify-center p-0.5 rounded-sm"><div className="w-full h-full bg-green-600 rounded-full" /></div>}
                 </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-slate-900 text-lg truncate">{r.name}</h3>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400 text-xs font-bold mb-4 uppercase tracking-wider">
+                    <Clock size={12} /> 25-35 MINS • ₹{r.avgPrice} for two
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    <div className="flex flex-col">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">Popular</p>
+                        <p className="text-sm font-black text-slate-800">Pizza & More</p>
+                    </div>
+
+                    {/* REAL-APP QTY TOGGLE */}
+                    {cart[r._id] ? (
+                      <div className="flex items-center gap-3 bg-orange-600 text-white px-3 py-1.5 rounded-xl shadow-lg shadow-orange-200 animate-in zoom-in-90">
+                        <button onClick={() => updateCart(r._id, -1, r.name)}><Minus size={16} /></button>
+                        <span className="font-black text-sm w-4 text-center">{cart[r._id]}</span>
+                        <button onClick={() => updateCart(r._id, 1, r.name)}><Plus size={16} /></button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => updateCart(r._id, 1, r.name)}
+                        className="bg-slate-50 text-orange-600 px-6 py-2 rounded-xl font-black text-xs hover:bg-orange-600 hover:text-white transition-all active:scale-95 border border-orange-100"
+                      >
+                        ADD
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </main>
+
+      {/* --- REALISTIC FLOATING CART BAR --- */}
+      {cartCount > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-lg">
+          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 animate-slide-up">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <ShoppingBag size={24} className="text-orange-500" />
+                <span className="absolute -top-2 -right-2 bg-white text-slate-900 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-bounce">
+                  {cartCount}
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Added {lastAdded || 'Items'}</p>
+                <p className="font-black text-sm">View your basket</p>
+              </div>
+            </div>
+            
+            <Link to="/cart" className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 px-5 py-2.5 rounded-xl transition-colors">
+              <span className="text-sm font-black uppercase">Next</span>
+              <ChevronRight size={18} />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
