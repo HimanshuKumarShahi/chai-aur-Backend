@@ -1,62 +1,49 @@
-import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { useUser, useAuth, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react"; // <-- Import RedirectToSignIn
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import { useUserSync } from "./hooks/useUserSync";
+
+// Layouts
+import AdminLayout from "./layouts/AdminLayout";
+import UserLayout from "./layouts/UserLayout";
+
+// Pages
 import Home from "./pages/Home";
+import Cart from "./pages/Cart";
 import AdminDashboard from "./pages/AdminDashboard";
+import AddRestaurant from "./pages/AddRestaurant";
+import AddFood from "./pages/AddFood";
 
-function App() {
-  const { user } = useUser(); 
-  const { getToken } = useAuth(); 
+// Components
+import ProtectedRoute from "./components/ProtectedRoute";
 
-  // Background Sync
-  useEffect(() => {
-    const syncUser = async () => {
-      if (user) {
-        try {
-          const token = await getToken();
-          await fetch('http://localhost:5000/api/users/sync', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.primaryEmailAddress?.emailAddress,
-              firstName: user.firstName, lastName: user.lastName
-            })
-          });
-        } catch (error) { console.error("Sync failed:", error); }
-      }
-    };
-    syncUser();
-  }, [user, getToken]);
+export default function App() {
+  useUserSync(); // sync Clerk user with backend
 
   return (
     <BrowserRouter>
-      {/* Dev Menu */}
-      <div className="bg-gray-800 text-white p-2 text-center text-sm flex gap-4 justify-center">
-        <span>Dev Menu:</span>
-        <Link to="/" className="hover:text-red-400 underline">Customer View (Home)</Link>
-        <Link to="/admin" className="hover:text-red-400 underline">Admin View</Link>
-      </div>
-
       <Routes>
-        {/* Public Route: Anyone can see the home page */}
-        <Route path="/" element={<Home />} />
-        
-        {/* Protected Route: Only logged-in users can see the Admin Dashboard */}
-        <Route path="/admin" element={
-          <>
-            <SignedIn>
-              <AdminDashboard />
-            </SignedIn>
-            <SignedOut>
-              {/* If they aren't logged in, instantly redirect them to the Clerk login */}
-              <RedirectToSignIn />
-            </SignedOut>
-          </>
-        } />
+
+        {/* ================= USER ROUTES ================= */}
+        <Route element={<UserLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/cart" element={<Cart />} />
+        </Route>
+
+        {/* ================= ADMIN ROUTES ================= */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="add-restaurant" element={<AddRestaurant />} />
+          <Route path="add-food" element={<AddFood />} />
+        </Route>
+
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;
