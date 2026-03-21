@@ -140,7 +140,7 @@ export default function Home() {
                     <h3 className="font-bold text-slate-900 text-lg truncate">{r.name}</h3>
                   </div>
                   <div className="flex items-center gap-2 text-slate-400 text-xs font-bold mb-4 uppercase tracking-wider">
-                    <Clock size={12} /> 25-35 MINS • ₹{r.avgPrice} for two
+                    <Clock size={12} /> 25-35 MINS 
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-slate-50">
@@ -149,21 +149,7 @@ export default function Home() {
                         <p className="text-sm font-black text-slate-800">Pizza & More</p>
                     </div>
 
-                    {/* REAL-APP QTY TOGGLE */}
-                    {cart[r._id] ? (
-                      <div className="flex items-center gap-3 bg-orange-600 text-white px-3 py-1.5 rounded-xl shadow-lg shadow-orange-200 animate-in zoom-in-90">
-                        <button onClick={() => updateCart(r._id, -1, r.name)}><Minus size={16} /></button>
-                        <span className="font-black text-sm w-4 text-center">{cart[r._id]}</span>
-                        <button onClick={() => updateCart(r._id, 1, r.name)}><Plus size={16} /></button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => updateCart(r._id, 1, r.name)}
-                        className="bg-slate-50 text-orange-600 px-6 py-2 rounded-xl font-black text-xs hover:bg-orange-600 hover:text-white transition-all active:scale-95 border border-orange-100"
-                      >
-                        ADD
-                      </button>
-                    )}
+            
                   </div>
                 </div>
               </div>

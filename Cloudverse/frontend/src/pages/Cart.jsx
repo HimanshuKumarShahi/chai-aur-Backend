@@ -1,7 +1,8 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
+import { CreditCard, Smartphone, Landmark, ShieldCheck, Timer, Loader2 } from "lucide-react";
 
 export default function Cart() {
   const { getToken } = useAuth();
@@ -10,37 +11,51 @@ export default function Cart() {
   const { cart, clearCart, increaseQuantity, decreaseQuantity } = useContext(CartContext);
   
   const [address, setAddress] = useState("");
-  const [paymentStep, setPaymentStep] = useState("idle"); // idle, scanning, success, processing
+  const [selectedMethod, setSelectedMethod] = useState(null);
+  
+  // idle -> processing -> scanning -> success
+  const [paymentStep, setPaymentStep] = useState("idle");
+  const [timeLeft, setTimeLeft] = useState(239); // 3:59 in seconds
 
-  // --- DYNAMIC CALCULATIONS ---
+  // --- CALCULATIONS ---
   const itemTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  
-  // LOGIC: Below 100 -> 20, Above 100 -> 30
   const deliveryFee = itemTotal > 0 ? (itemTotal < 100 ? 20 : 30) : 0;
-  
   const taxes = itemTotal * 0.05; 
   const grandTotal = itemTotal + deliveryFee + taxes;
 
-  const handleStartPayment = () => {
-    if (!address.trim()) {
-      alert("📍 Please enter a delivery address first!");
-      return;
+  // --- TIMER LOGIC ---
+  useEffect(() => {
+    let timer;
+    if (paymentStep === "scanning" && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     }
-    setPaymentStep("scanning");
+    return () => clearInterval(timer);
+  }, [paymentStep, timeLeft]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const executeOrder = async () => {
+  const handleStartPayment = () => {
+    if (!address.trim()) return alert("📍 Please enter a delivery address!");
+    if (!selectedMethod) return alert("💳 Select a payment method!");
+    
     setPaymentStep("processing");
+    
+    // Simulate Bank Configuration for 3 seconds
+    setTimeout(() => {
+      setPaymentStep("scanning");
+    }, 3000);
+  };
+
+  const finalizeOrder = async () => {
     try {
       const token = await getToken();
       const orderData = {
         clerkUserId: user.id,
-        items: cart.map(item => ({
-          foodItem: item._id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price
-        })),
+        items: cart.map(item => ({ foodItem: item._id, quantity: item.quantity, price: item.price })),
         totalAmount: grandTotal,
         deliveryAddress: address
       };
@@ -56,124 +71,150 @@ export default function Cart() {
         setTimeout(() => {
           clearCart();
           navigate("/");
-        }, 4000);
-      } else {
-        alert("❌ Order Failed. Please try again.");
-        setPaymentStep("idle");
+        }, 5000);
       }
     } catch (error) {
-      console.error(error);
+      alert("System Overheated! Try again.");
       setPaymentStep("idle");
     }
   };
 
   if (cart.length === 0 && paymentStep === "idle") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
-        <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-cart-7359557-6024626.png" className="w-48 h-48 mb-6" alt="Empty" />
-        <h2 className="text-2xl font-black text-gray-800">Your cart is empty!</h2>
-        <p className="text-gray-500 mt-2 mb-8">Add some yummy food from Muzaffarpur's best kitchens.</p>
-        <Link to="/" className="bg-red-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-red-200">Order Now</Link>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
+        <img src="https://cdn-icons-png.flaticon.com/512/11329/11329073.png" className="w-40 mb-6 opacity-20" alt="Empty" />
+        <h2 className="text-xl font-bold text-slate-400">Cart is empty</h2>
+        <Link to="/" className="mt-4 text-blue-600 font-bold hover:underline">Go get some food →</Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 pb-32">
-      <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-6">Review Order</h1>
+    <div className="max-w-6xl mx-auto p-6 pb-32 font-sans">
+      <h1 className="text-3xl font-black tracking-tighter mb-8">Secure Checkout</h1>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
-        {/* LEFT: Items & Address */}
-        <div className="flex-1 space-y-6">
-          {/* Address Card */}
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
-            <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">📍 Delivery Address</h2>
-            <textarea 
-              className="w-full p-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-red-500 outline-none text-sm font-medium"
-              placeholder="e.g. House No. 24, Near Gobarsahi Chowk, Muzaffarpur"
-              value={address} onChange={e => setAddress(e.target.value)}
-            />
-          </div>
+        {/* LEFT: Details */}
+        <div className="lg:col-span-8 space-y-8">
+          
+          {/* Address Section */}
+          <section>
+            <h2 className="text-sm font-black uppercase text-slate-400 mb-4 tracking-widest">1. Delivery Location</h2>
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+              <textarea 
+                className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-black outline-none text-sm"
+                placeholder="Enter your full address in Muzaffarpur..."
+                rows="3"
+                value={address} onChange={e => setAddress(e.target.value)}
+              />
+            </div>
+          </section>
 
-          {/* Items Card */}
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
-            <h2 className="font-bold text-gray-800 mb-4">Items in Cart</h2>
-            <div className="space-y-6">
-              {cart.map(item => (
-                <div key={item._id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${item.isVegetarian ? 'bg-green-600' : 'bg-red-600'}`}></div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-sm md:text-base">{item.name}</h4>
-                      <p className="text-xs text-gray-500">₹{item.price}</p>
-                    </div>
+          {/* Payment Methods */}
+          <section>
+            <h2 className="text-sm font-black uppercase text-slate-400 mb-4 tracking-widest">2. Payment Method</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { id: 'upi', icon: <Smartphone />, label: 'UPI / QR', desc: 'GPay, PhonePe' },
+                { id: 'card', icon: <CreditCard />, label: 'Cards', desc: 'Visa, Master' },
+                { id: 'net', icon: <Landmark />, label: 'Net Banking', desc: 'All Banks' }
+              ].map(m => (
+                <button 
+                  key={m.id}
+                  onClick={() => setSelectedMethod(m.id)}
+                  className={`p-6 rounded-[2rem] border-2 transition-all text-left flex flex-col gap-4
+                  ${selectedMethod === m.id ? 'border-black bg-black text-white' : 'border-slate-100 bg-white hover:border-slate-300'}`}
+                >
+                  <div className={selectedMethod === m.id ? 'text-white' : 'text-slate-400'}>{m.icon}</div>
+                  <div>
+                    <p className="font-bold text-sm">{m.label}</p>
+                    <p className={`text-[10px] ${selectedMethod === m.id ? 'text-slate-400' : 'text-slate-500'}`}>{m.desc}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 bg-red-50 px-3 py-1 rounded-xl border border-red-100">
-                      <button onClick={() => decreaseQuantity(item._id)} className="text-red-600 font-bold">−</button>
-                      <span className="font-bold text-sm">{item.quantity}</span>
-                      <button onClick={() => increaseQuantity(item._id)} className="text-red-600 font-bold">+</button>
-                    </div>
-                    <span className="font-bold text-gray-900 text-sm w-12 text-right">₹{item.price * item.quantity}</span>
-                  </div>
-                </div>
+                </button>
               ))}
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* RIGHT: Billing (Sticky on desktop, Bottom bar on mobile) */}
-        <div className="w-full lg:w-96">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm sticky top-24">
-            <h3 className="font-bold text-gray-900 mb-4">Bill Details</h3>
-            <div className="space-y-3 text-sm font-medium text-gray-500">
-              <div className="flex justify-between"><span>Item Total</span><span className="text-gray-900">₹{itemTotal}</span></div>
-              <div className="flex justify-between"><span>Delivery Fee</span><span className="text-red-500">+ ₹{deliveryFee}</span></div>
-              <div className="flex justify-between border-b border-dashed pb-3"><span>Taxes (5%)</span><span className="text-gray-900">₹{taxes.toFixed(2)}</span></div>
-              <div className="flex justify-between text-lg font-black text-gray-900 pt-1">
-                <span>To Pay</span>
-                <span>₹{grandTotal.toFixed(2)}</span>
-              </div>
+        {/* RIGHT: Summary */}
+        <div className="lg:col-span-4">
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl sticky top-24">
+            <h3 className="font-black text-lg mb-6">Order Summary</h3>
+            <div className="space-y-4 text-sm font-medium border-b pb-6">
+              <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="text-black">₹{itemTotal}</span></div>
+              <div className="flex justify-between text-slate-500"><span>Delivery Fee</span><span className="text-black">₹{deliveryFee}</span></div>
+              <div className="flex justify-between text-slate-500"><span>GST (5%)</span><span className="text-black">₹{taxes.toFixed(2)}</span></div>
+            </div>
+            <div className="flex justify-between text-xl font-black py-6">
+              <span>Total</span>
+              <span>₹{grandTotal.toFixed(2)}</span>
             </div>
             <button 
               onClick={handleStartPayment}
-              className="w-full bg-red-600 text-white py-4 rounded-2xl font-bold mt-6 hover:bg-red-700 active:scale-95 transition-all"
+              className="w-full bg-black text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
             >
-              Pay Now
+              <ShieldCheck size={20} /> PAY NOW
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- FUNNY PAYMENT OVERLAYS --- */}
-
-      {/* 1. SCANNING STATE */}
-      {paymentStep === "scanning" && (
-        <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-6 text-center">
-           <div className="w-64 h-64 border-4 border-dashed border-green-500 rounded-3xl animate-pulse mb-8 flex items-center justify-center relative">
-             <div className="absolute inset-0 bg-green-500/20 animate-ping rounded-3xl"></div>
-             <span className="text-6xl">📸</span>
-           </div>
-           <h2 className="text-2xl font-bold text-white tracking-widest">SCANNING QR...</h2>
-           <p className="text-gray-400 mt-2">Connecting to Cloudverse Safe-Vault</p>
-           <button 
-             onClick={executeOrder}
-             className="mt-10 bg-green-600 text-white px-8 py-3 rounded-xl font-bold"
-           >
-             Tap to Confirm Payment ✅
-           </button>
+      {/* --- STEP 1: PROCESSING LOADING --- */}
+      {paymentStep === "processing" && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-md z-[200] flex flex-col items-center justify-center">
+          <Loader2 className="animate-spin text-black mb-4" size={48} />
+          <h2 className="text-xl font-black uppercase tracking-widest">Configuring Secure Gateway</h2>
+          <p className="text-slate-500 text-sm mt-2">Checking bank servers for Cloudverse Muzaffarpur...</p>
         </div>
       )}
 
+      {/* --- STEP 2: SCANNER (TIMER ACTIVE) --- */}
+      {paymentStep === "scanning" && (
+        <div className="fixed inset-0 bg-slate-900 z-[210] flex flex-col items-center justify-center p-6 text-white overflow-hidden">
+          <div className="relative group cursor-pointer" onClick={finalizeOrder}>
+            {/* The Scanner UI */}
+            <div className="w-72 h-72 border-2 border-white/20 rounded-[3rem] p-6 relative bg-white flex items-center justify-center">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=CLOUDVERSE_PAISA" alt="QR" className="w-full" />
+              {/* Laser Line Animation */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_15px_#22c55e] animate-scan-line"></div>
+            </div>
+            <div className="absolute -inset-4 bg-green-500/10 rounded-[4rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
 
+          <div className="mt-12 text-center">
+            <div className="flex items-center justify-center gap-2 text-orange-500 font-mono text-2xl font-black mb-2">
+              <Timer size={24} /> {formatTime(timeLeft)}
+            </div>
+            <p className="text-slate-400 text-sm font-bold tracking-widest uppercase">Waiting for scan...</p>
+            <p className="text-slate-500 text-xs mt-8 max-w-xs opacity-50">Please do not refresh. This QR is valid for your current session in Muzaffarpur only.</p>
+            
+            <button 
+              onClick={finalizeOrder}
+              className="mt-12 bg-white text-black px-10 py-4 rounded-2xl font-black text-sm hover:scale-105 transition-all"
+            >
+              I HAVE SCANNED ✅
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- STEP 3: SUCCESS (FUNNY GIF) --- */}
       {paymentStep === "success" && (
-        <div className="fixed inset-0 bg-white z-[110] flex flex-col items-center justify-center p-6 text-center">
-          <div className="text-[120px] md:text-[180px] animate-bounce">🤣</div>
-          <h1 className="text-4xl md:text-6xl font-black text-green-600 italic">PAISA VASOOL!</h1>
-          <p className="text-xl font-bold text-gray-800 mt-4">Order Placed Successfully!</p>
-          <div className="mt-8 bg-red-50 p-4 rounded-2xl">
-             <p className="text-red-600 font-bold uppercase tracking-tighter">Chef is already crying while cooking! 👨‍🍳🔥</p>
+        <div className="fixed inset-0 bg-white z-[300] flex flex-col items-center justify-center p-8 text-center">
+          {/* Funny GIF Placeholder (Swap with a real Tenor/Giphy link) */}
+          <div className="w-full max-w-sm mb-8 rounded-[3rem] overflow-hidden shadow-2xl">
+            <img 
+              src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmVpaHdpbmFhdHYxZ2VpbDZpN2djZTJ3cjl5ZGs5MHFzb2kwYzRveSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Rfwlp9c5bA7R3s7Y5D/giphy.gif" 
+              className="w-full h-full object-cover" 
+              alt="Funny Success" 
+            />
+          </div>
+          <h1 className="text-5xl font-black text-black italic leading-tight">PAISA VASOOL!</h1>
+          <p className="text-lg font-bold text-slate-500 mt-4 underline decoration-orange-500 underline-offset-8">Order #CV-{Math.floor(Math.random()*9000)+1000} is confirmed!</p>
+          <div className="mt-12 flex items-center gap-3 bg-green-50 text-green-700 px-6 py-3 rounded-full font-bold text-sm">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+            Rider is speeding towards the restaurant!
           </div>
         </div>
       )}

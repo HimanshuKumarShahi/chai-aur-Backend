@@ -4,19 +4,12 @@ body {
   background-color: #f8fafc; 
 }
 
-@keyframes slideUp {
-  from { transform: translate(-50%, 120%); opacity: 0; }
-  to { transform: translate(-50%, 0%); opacity: 1; }
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100%; }
 }
 
-.animate-slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.animate-scan-line {
+  position: absolute;
+  animation: scan 2s linear infinite;
 }
