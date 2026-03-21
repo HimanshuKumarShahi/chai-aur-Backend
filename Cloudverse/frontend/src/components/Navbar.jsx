@@ -24,7 +24,7 @@ export default function Navbar() {
               </svg>
               <div>
                 <span className="font-bold text-gray-700 border-b-2 border-gray-700 group-hover:border-red-600 group-hover:text-red-600 transition-colors">
-                  Patna
+                  Muzaffarpur
                 </span>
                 <span className="text-gray-500 ml-2">Bihar, India</span>
               </div>

@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import { useUserSync } from "./hooks/useUserSync";
 
 // Layouts
@@ -9,6 +8,7 @@ import UserLayout from "./layouts/UserLayout";
 // Pages
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
+import Restaurant from "./pages/Restaurant";
 import AdminDashboard from "./pages/AdminDashboard";
 import AddRestaurant from "./pages/AddRestaurant";
 import AddFood from "./pages/AddFood";
@@ -17,16 +17,18 @@ import AddFood from "./pages/AddFood";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
-  useUserSync(); // sync Clerk user with backend
+  useUserSync(); 
 
   return (
     <BrowserRouter>
       <Routes>
 
         {/* ================= USER ROUTES ================= */}
+        {/* UserLayout usually contains your Navbar */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/restaurant/:id" element={<Restaurant />} />
         </Route>
 
         {/* ================= ADMIN ROUTES ================= */}
@@ -38,7 +40,10 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<AdminDashboard />} />
+          {/* Use 'index' for the main /admin page */}
+          <Route index element={<AdminDashboard />} /> 
+          
+          {/* These will be /admin/add-restaurant and /admin/add-food */}
           <Route path="add-restaurant" element={<AddRestaurant />} />
           <Route path="add-food" element={<AddFood />} />
         </Route>
