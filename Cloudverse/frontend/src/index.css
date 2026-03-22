@@ -13,3 +13,12 @@ body {
   position: absolute;
   animation: scan 2s linear infinite;
 }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+canvas {
+  touch-action: none; /* Prevents scrolling interference on mobile 3D */
+}

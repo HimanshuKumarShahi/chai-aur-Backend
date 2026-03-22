@@ -1,187 +1,157 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Search, ShoppingBag, Star, Clock, Plus, Minus, ChevronRight, X } from "lucide-react";
+import { Search, ShoppingBag, Star, Clock, Zap, MapPin, Trophy, Percent, AlertCircle, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ErrorBoundary } from "react-error-boundary";
+import Spline from '@splinetool/react-spline';
+
+// --- 1. PREMIUM ERROR FALLBACK (Prevents White Screen) ---
+const HeroErrorFallback = () => (
+  <div className="w-full h-full bg-gradient-to-br from-slate-900 to-black rounded-[4rem] flex flex-col items-center justify-center p-12 text-center border-[12px] border-white shadow-2xl">
+    <div className="bg-orange-500/20 p-6 rounded-full mb-6">
+      <Zap size={48} className="text-orange-500 animate-pulse" />
+    </div>
+    <h3 className="text-white text-3xl font-black italic tracking-tighter">ENGINE ASLEEP</h3>
+    <p className="text-slate-400 font-bold text-sm mt-2 max-w-xs">The 3D view is resting, but our kitchens are wide awake!</p>
+    <button onClick={() => window.location.reload()} className="mt-8 bg-orange-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-500 transition-all">
+      Wake Up Engine
+    </button>
+  </div>
+);
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Filter & Search States
+  const [filteredList, setFilteredList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [showVegOnly, setShowVegOnly] = useState(false);
-  const [sortBy, setSortBy] = useState("default");
-
-  // Real-App Cart State
-  const [cart, setCart] = useState({}); // { restaurantId: quantity }
-  const [lastAdded, setLastAdded] = useState(null);
-
-  const categories = [
-    { name: "All", emoji: "🏠" },
-    { name: "Pizza", emoji: "🍕" },
-    { name: "Burger", emoji: "🍔" },
-    { name: "Biryani", emoji: "🍗" },
-    { name: "Healthy", emoji: "🥗" },
-    { name: "Desserts", emoji: "🍰" },
-    { name: "Chinese", emoji: "🍜" }
-  ];
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [isLoaded, setIsLoaded] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    // Simulated API Fetch
-    fetch("http://localhost:5000/api/restaurants")
-      .then(res => res.json())
-      .then(data => {
-        setRestaurants(data);
-        setFilteredRestaurants(data);
-        setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
+    // Wrap fetch in try-catch to prevent data errors from causing white screens
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/restaurants");
+        const data = await res.json();
+        if (data) {
+          setRestaurants(data);
+          setFilteredList(data);
+        }
+      } catch (err) {
+        console.error("Data Fetch Error:", err);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    fetchData();
   }, []);
 
-  // Composite Filter Logic
   useEffect(() => {
+    if (!restaurants.length) return;
     let result = [...restaurants];
     if (searchTerm) {
-      result = result.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      result = result.filter(r => r.name?.toLowerCase().includes(searchTerm.toLowerCase()));
     }
-    if (activeCategory !== "All") {
-      result = result.filter(r => r.cuisine?.some(c => c.toLowerCase().includes(activeCategory.toLowerCase())));
-    }
-    if (showVegOnly) result = result.filter(r => r.isVeg);
-    if (sortBy === "lowToHigh") result.sort((a, b) => a.avgPrice - b.avgPrice);
-    if (sortBy === "highToLow") result.sort((a, b) => b.avgPrice - a.avgPrice);
-    setFilteredRestaurants(result);
-  }, [searchTerm, activeCategory, showVegOnly, sortBy, restaurants]);
-
-  // Realistic Cart Functions
-  const updateCart = (id, delta, name) => {
-    setCart(prev => {
-      const newQty = (prev[id] || 0) + delta;
-      if (newQty <= 0) {
-        const { [id]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [id]: newQty };
-    });
-    if (delta > 0) {
-      setLastAdded(name);
-      setTimeout(() => setLastAdded(null), 2000);
-    }
-  };
-
-  const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
+    if (activeFilter === "topmost") result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (activeFilter === "offers") result = result.filter(r => r.hasOffer);
+    setFilteredList(result);
+  }, [searchTerm, activeFilter, restaurants]);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32">
-      {/* --- STICKY HEADER --- */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <span className="bg-orange-500 text-white p-1 rounded-lg">CV</span>
-              Cloudverse <span className="text-orange-500 hidden sm:inline">Muzaffarpur</span>
-            </h1>
+    <div className="min-h-screen bg-[#F8FAFC] pb-32 overflow-x-hidden">
+      
+      {/* --- HERO SECTION --- */}
+      <section className="max-w-7xl mx-auto px-8 pt-24 pb-20 grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
+          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm mb-8 border border-slate-100">
+            <span className="h-2 w-2 bg-green-500 rounded-full animate-ping" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live in Muzaffarpur</span>
           </div>
-          
-          <div className="relative w-1/3 max-w-sm hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <h2 className="text-8xl xl:text-9xl font-black leading-[0.85] tracking-tighter mb-8">
+            Digital <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 italic">Cravings.</span>
+          </h2>
+          <button 
+            onClick={() => menuRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            className="bg-slate-900 text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-2xl hover:bg-orange-600 transition-all"
+          >
+            Explore Menu
+          </button>
+        </motion.div>
+
+        {/* 3D MODEL WITH SAFETY BOUNDARY */}
+        <div className="h-[550px] relative hidden lg:block group">
+          <div className="absolute inset-0 bg-orange-500/10 blur-[100px] rounded-full -z-10" />
+          <ErrorBoundary FallbackComponent={HeroErrorFallback}>
+            <Suspense fallback={<div className="w-full h-full bg-slate-100 rounded-[4rem] flex items-center justify-center"><Loader2 className="animate-spin text-orange-500" /></div>}>
+              <div className="w-full h-full rounded-[4rem] overflow-hidden border-[12px] border-white shadow-2xl bg-white relative">
+                <Spline scene="https://prod.spline.design/6Wq1Q7YKVpM-pT86/scene.splinecode" />
+              </div>
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      </section>
+
+      {/* --- STICKY SEARCH BAR --- */}
+      <div ref={menuRef} className="sticky top-6 z-50 px-8 mb-16">
+        <div className="max-w-6xl mx-auto bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] p-3 shadow-2xl flex flex-col lg:flex-row items-center gap-4">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
             <input 
-              type="text" 
-              placeholder="Search for food..." 
-              className="w-full bg-slate-100 border-none rounded-xl py-2 pl-10 focus:ring-2 focus:ring-orange-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search nearest legends..." 
+              className="w-full bg-slate-50 border-none rounded-[2rem] py-5 pl-16 pr-6 outline-none font-bold text-sm shadow-inner transition-all focus:bg-white"
             />
           </div>
-
-          <div className="flex items-center gap-4">
-             <button className="p-2 hover:bg-slate-100 rounded-full transition-colors relative">
-                <ShoppingBag size={22} className="text-slate-700" />
-                {cartCount > 0 && <span className="absolute top-0 right-0 bg-orange-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>}
-             </button>
+          <div className="flex gap-2 overflow-x-auto w-full lg:w-auto scrollbar-hide py-1">
+            {[{ id: 'all', label: 'All', icon: <MapPin size={14}/> }, { id: 'topmost', label: 'Top Rated', icon: <Trophy size={14}/> }, { id: 'offers', label: 'Offers', icon: <Percent size={14}/> }].map(f => (
+              <button 
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                className={`flex items-center gap-2 px-8 py-4 rounded-[1.8rem] font-black text-[10px] uppercase tracking-widest transition-all
+                ${activeFilter === f.id ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-slate-400 hover:text-slate-900'}`}
+              >
+                {f.icon} {f.label}
+              </button>
+            ))}
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-6 mt-8">
-        {/* --- CATEGORY PILLS --- */}
-        <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
-          {categories.map(cat => (
-            <button
-              key={cat.name}
-              onClick={() => setActiveCategory(cat.name)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full whitespace-nowrap font-bold text-sm transition-all border
-                ${activeCategory === cat.name ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}
-            >
-              <span>{cat.emoji}</span> {cat.name}
-            </button>
-          ))}
-        </div>
-
-        {/* --- RESTAURANT GRID --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-4">
-          {isLoading ? (
-            [...Array(8)].map((_, i) => <div key={i} className="h-64 bg-white rounded-3xl animate-pulse" />)
+      {/* --- RESTAURANT GRID --- */}
+      <main className="max-w-7xl mx-auto px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          {!isLoaded ? (
+            [1, 2, 3].map(i => <div key={i} className="h-[500px] rounded-[4rem] bg-slate-200 animate-pulse" />)
           ) : (
-            filteredRestaurants.map(r => (
-              <div key={r._id} className="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500">
-                <Link to={`/restaurant/${r._id}`} className="block relative h-48 overflow-hidden">
-                  <img src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                    <Star size={12} className="text-orange-500" fill="currentColor" />
-                    <span className="text-xs font-black">4.2</span>
-                  </div>
-                  {r.isVeg && <div className="absolute top-4 right-4 w-4 h-4 bg-white border border-green-600 flex items-center justify-center p-0.5 rounded-sm"><div className="w-full h-full bg-green-600 rounded-full" /></div>}
-                </Link>
-
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-slate-900 text-lg truncate">{r.name}</h3>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400 text-xs font-bold mb-4 uppercase tracking-wider">
-                    <Clock size={12} /> 25-35 MINS 
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                    <div className="flex flex-col">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">Popular</p>
-                        <p className="text-sm font-black text-slate-800">Pizza & More</p>
+            <AnimatePresence mode="popLayout">
+              {filteredList.map((r) => (
+                <motion.div
+                  layout
+                  key={r._id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ y: -15, rotate: 1 }}
+                  className="group relative h-[520px] rounded-[4rem] overflow-hidden border-[8px] border-white shadow-2xl transition-all duration-700 bg-slate-100"
+                >
+                  <Link to={`/restaurant/${r._id}`}>
+                    <img src={r.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/10 to-transparent" />
+                    <div className="absolute bottom-12 left-12 right-12 text-white">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Star size={16} fill="#f97316" className="text-orange-500" />
+                        <span className="font-black text-xl tracking-tighter">4.9</span>
+                      </div>
+                      <h4 className="text-5xl font-black mb-4 tracking-tighter leading-[0.9] group-hover:text-orange-400 transition-colors">{r.name}</h4>
+                      <p className="font-bold text-[10px] uppercase tracking-[0.2em] opacity-40">Muzaffarpur • 20 MIN</p>
                     </div>
-
-            
-                  </div>
-                </div>
-              </div>
-            ))
+                  </Link>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           )}
         </div>
       </main>
-
-      {/* --- REALISTIC FLOATING CART BAR --- */}
-      {cartCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-lg">
-          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 animate-slide-up">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <ShoppingBag size={24} className="text-orange-500" />
-                <span className="absolute -top-2 -right-2 bg-white text-slate-900 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-bounce">
-                  {cartCount}
-                </span>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Added {lastAdded || 'Items'}</p>
-                <p className="font-black text-sm">View your basket</p>
-              </div>
-            </div>
-            
-            <Link to="/cart" className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 px-5 py-2.5 rounded-xl transition-colors">
-              <span className="text-sm font-black uppercase">Next</span>
-              <ChevronRight size={18} />
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,100 +1,154 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, Suspense, lazy } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CartContext } from "../context/CartContext";
 import BackButton from "../components/BackButton";
+import { Star, Clock, ShoppingBag, Leaf, Flame, ArrowUpDown, Coffee, Utensils, Zap, MapPin } from "lucide-react";
+import { ErrorBoundary } from "react-error-boundary";
+
+const Spline = lazy(() => import('@splinetool/react-spline'));
+
+const HeaderFallback = ({ image, name }) => (
+  <div className="relative h-full w-full bg-slate-900 flex items-center justify-center">
+    {image && <img src={image} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-md" alt={name} />}
+    <Zap size={32} className="text-orange-500 animate-pulse" />
+  </div>
+);
 
 export default function Restaurant() {
   const { id } = useParams();
   const [restaurant, setRestaurant] = useState(null);
   const [foods, setFoods] = useState([]);
+  const [filteredFoods, setFilteredFoods] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showToast, setShowToast] = useState(false);
-  const [addedItemName, setAddedItemName] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [sortOrder, setSortOrder] = useState("default");
 
   const { addToCart } = useContext(CartContext);
 
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    let isMounted = true;
+    const fetchData = async () => {
       try {
-        const restRes = await fetch("http://localhost:5000/api/restaurants");
-        const restData = await restRes.json();
-        const currentRestaurant = restData.find(r => r._id === id);
-        setRestaurant(currentRestaurant);
-
-        const foodRes = await fetch(`http://localhost:5000/api/food/restaurant/${id}`);
-        const foodData = await foodRes.json();
-        setFoods(foodData);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
+        const res = await fetch("http://localhost:5000/api/restaurants");
+        const data = await res.json();
+        const current = data.find(r => r._id === id);
+        if (isMounted && current) {
+          setRestaurant(current);
+          const fRes = await fetch(`http://localhost:5000/api/food/restaurant/${id}`);
+          setFoods(await fRes.json());
+        }
+      } catch (e) { console.error(e); }
+      finally { if (isMounted) setIsLoading(false); }
     };
-    fetchRestaurantData();
+    fetchData();
+    return () => { isMounted = false; };
   }, [id]);
 
-  const handleAdd = (item) => {
-    addToCart(item);
-    setAddedItemName(item.name);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000); // Hide after 2 seconds
-  };
+  useEffect(() => {
+    let result = [...foods];
+    if (activeTab === "food") result = result.filter(i => !i.isDrink);
+    if (activeTab === "drinks") result = result.filter(i => i.isDrink);
+    if (sortOrder === "low") result.sort((a, b) => a.price - b.price);
+    if (sortOrder === "high") result.sort((a, b) => b.price - a.price);
+    setFilteredFoods(result);
+  }, [activeTab, sortOrder, foods]);
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center font-black text-orange-500 uppercase">Syncing...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto w-full pb-20 mt-4 px-4">
-      <BackButton />
-
-      {/* SUCCESS TOAST POPUP */}
-      {showToast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-bounce border-2 border-red-500">
-          <span className="text-xl">✅</span>
-          <span className="font-bold text-sm tracking-tight">{addedItemName} added to cart!</span>
+    <div className="min-h-screen bg-[#FDFDFF] pb-32">
+      
+      {/* --- FIXED BACK BUTTON POSITION FIX --- */}
+      {/* Using 'left-4 md:left-10' and 'top-4 md:top-8' ensures 
+          it doesn't hug the edge too tight on mobile.
+      */}
+      <div className="fixed top-4 left-4 md:top-8 md:left-10 z-[200]">
+        <div className="bg-white/80 backdrop-blur-md p-1 rounded-2xl shadow-xl border border-white">
+          <BackButton />
         </div>
-      )}
+      </div>
 
-      {isLoading ? (
-        <div className="text-center py-20 animate-pulse text-gray-400 font-bold">Preparing Menu...</div>
-      ) : (
-        <>
-          {/* HERO SECTION */}
-          <div className="relative h-64 rounded-3xl overflow-hidden mb-8 shadow-lg mt-4">
-            <img src={restaurant?.image} className="w-full h-full object-cover" alt={restaurant?.name} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8">
-              <h1 className="text-4xl font-black text-white">{restaurant?.name}</h1>
-              <p className="text-gray-300 font-bold mt-1">📍 {restaurant?.address}</p>
+      {/* --- HERO HEADER --- */}
+      <div className="relative h-[400px] md:h-[500px] w-full bg-slate-100 overflow-hidden shadow-2xl">
+        <ErrorBoundary FallbackComponent={() => <HeaderFallback image={restaurant?.image} name={restaurant?.name} />}>
+          <Suspense fallback={<HeaderFallback image={restaurant?.image} name={restaurant?.name} />}>
+            <div className="w-full h-full border-b-[12px] border-white">
+              <Spline scene="https://prod.spline.design/6Wq1Q7YKVpM-pT86/scene.splinecode" />
             </div>
+          </Suspense>
+        </ErrorBoundary>
+
+        <div className="absolute bottom-0 inset-x-0 p-6 md:p-12 bg-gradient-to-t from-white via-white/20 to-transparent z-20">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-slate-900 leading-none">
+              {restaurant?.name}
+            </h1>
           </div>
+        </div>
+      </div>
 
-          <h2 className="text-2xl font-black mb-6 flex items-center gap-4">
-            Menu <div className="h-1 bg-red-600 w-12 rounded-full"></div>
-          </h2>
-
-          <div className="flex flex-col gap-6">
-            {foods.map(item => (
-              <div key={item._id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex justify-between gap-6 hover:shadow-md transition-all">
-                <div className="flex-1">
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center mb-2 ${item.isVegetarian ? 'border-green-600' : 'border-red-600'}`}>
-                    <div className={`w-2 h-2 rounded-full ${item.isVegetarian ? 'bg-green-600' : 'bg-red-600'}`} />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800">{item.name}</h3>
-                  <p className="font-black text-gray-900 mt-1">₹{item.price}</p>
-                  <p className="text-gray-400 text-sm mt-2 line-clamp-2">{item.description}</p>
-                </div>
-
-                <div className="relative w-32 h-32 md:w-40 md:h-40">
-                  <img src={item.image} className="w-full h-full object-cover rounded-2xl border" alt={item.name} />
-                  <button 
-                    onClick={() => handleAdd(item)}
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white text-green-600 border border-gray-200 px-8 py-2 rounded-xl font-black text-sm shadow-md hover:bg-green-50 active:scale-90 transition-all"
-                  >
-                    ADD
-                  </button>
-                </div>
-              </div>
+      {/* --- STICKY FILTERS --- */}
+      <div className="sticky top-0 z-[100] bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-4 md:py-6">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex bg-slate-100 p-1 rounded-2xl w-full md:w-auto">
+            {['all', 'food', 'drinks'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all
+                ${activeTab === tab ? 'bg-white text-orange-600 shadow-md' : 'text-slate-400'}`}
+              >
+                {tab}
+              </button>
             ))}
           </div>
-        </>
-      )}
+          
+          <div className="flex gap-2 w-full md:w-auto">
+            <button 
+              onClick={() => setSortOrder(sortOrder === "low" ? "default" : "low")}
+              className={`flex-1 md:flex-none px-4 py-2.5 rounded-xl border-2 font-black text-[10px] uppercase transition-all 
+              ${sortOrder === "low" ? "border-orange-500 bg-orange-50 text-orange-600" : "border-slate-100 text-slate-400"}`}
+            >
+              Price: Low-High
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* --- MENU LIST --- */}
+      <main className="max-w-6xl mx-auto px-4 md:px-8 mt-10">
+        <div className="grid grid-cols-1 gap-6 md:gap-10">
+          <AnimatePresence mode="popLayout">
+            {filteredFoods.map((item) => (
+              <motion.div 
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={item._id}
+                className="group bg-white rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-10 border-[4px] md:border-[6px] border-white shadow-xl flex flex-col md:flex-row items-center gap-6 md:gap-12"
+              >
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl md:text-4xl font-black text-slate-800 tracking-tighter mb-2">{item.name}</h3>
+                  <p className="text-slate-400 text-sm font-medium leading-relaxed mb-6 line-clamp-2">{item.description}</p>
+                  <span className="text-3xl md:text-4xl font-black text-slate-900 italic tracking-tighter leading-none">₹{item.price}</span>
+                </div>
+
+                <div className="relative w-full md:w-56 h-56 rounded-[2rem] overflow-hidden shadow-2xl border-[6px] border-slate-50">
+                  <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                  <motion.button 
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => addToCart(item)}
+                    className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase shadow-2xl hover:bg-orange-600 transition-colors"
+                  >
+                    Add
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   );
 }
