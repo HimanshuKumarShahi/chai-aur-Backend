@@ -1,70 +1,30 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 
-export default function Tablayout() {
+export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: 'orange',
-        tabBarInactiveTintColor: 'black',
-        tabBarShowLabel:false,
-        headerShown: false, 
-        tabBarHideOnKeyboard: true,
-        tabBarStyle:{
-          backgroundColor:"#fff",
-          borderWidth:2,
-          borderTopColor:"orange",
-          height:85,
-          paddingTop:2
-        }
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="Courses"
-        options={{
-          title: 'Courses',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="Assignments"
-        options={{
-          title: 'Assignments',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="Downloads"
-        options={{
-          title: 'Downloads',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'download' : 'download-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="Profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-          ),
-        }}
-      />
+    <Tabs screenOptions={{
+      tabBarActiveTintColor: '#EA580C',
+      tabBarInactiveTintColor: '#000',
+      tabBarShowLabel: false,
+      headerShown: false,
+      tabBarStyle: {
+        backgroundColor: "#fff",
+        borderTopWidth: 2,
+        borderTopColor: "#EA580C",
+        height: Platform.OS === 'ios' ? 65 + insets.bottom : 75,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
+      }
+    }}>
+      <Tabs.Screen name="index" options={{ tabBarIcon: ({color, focused}) => <Ionicons name={focused ? "home" : "home-outline"} size={26} color={color} /> }} />
+      <Tabs.Screen name="Courses" options={{ tabBarIcon: ({color, focused}) => <Ionicons name={focused ? "book" : "book-outline"} size={26} color={color} /> }} />
+      <Tabs.Screen name="Assignments" options={{ tabBarIcon: ({color, focused}) => <Ionicons name={focused ? "clipboard" : "clipboard-outline"} size={26} color={color} /> }} />
+      <Tabs.Screen name="Downloads" options={{ tabBarIcon: ({color, focused}) => <Ionicons name={focused ? "download" : "download-outline"} size={26} color={color} /> }} />
+      <Tabs.Screen name="Profile" options={{ tabBarIcon: ({color, focused}) => <Ionicons name={focused ? "person" : "person-outline"} size={26} color={color} /> }} />
     </Tabs>
   );
 }
