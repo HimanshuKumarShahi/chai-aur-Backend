@@ -4,6 +4,7 @@ import { requireAuth } from '@clerk/express';
 
 const router = express.Router();
 
-router.get('/sync', requireAuth(), syncUser);
+// CORRECTED: Changed from .get to .post
+router.post('/sync', requireAuth(), syncUser);
 
 export default router;
