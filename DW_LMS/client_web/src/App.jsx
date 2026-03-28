@@ -1,4 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SignIn, SignUp, useUser } from "@clerk/clerk-react";
+import { dark } from "@clerk/themes";
+
+// Components & Pages
 import Home from "./pages/Home";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
@@ -7,11 +11,9 @@ import Downloads from "./pages/Downloads";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Layout from "./components/Layout";
-import { SignIn, SignUp, useUser } from "@clerk/clerk-react";
-import { dark } from "@clerk/themes"; // 🔥 Import the dark theme
 import SyncUser from "./components/SyncUser";
 
-// 🎨 Helper Component to wrap Auth with LMS Theme
+// Centered Auth Layout for Login/Signup
 function AuthWrapper({ children }) {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden">
@@ -22,36 +24,58 @@ function AuthWrapper({ children }) {
   );
 }
 
+// Protected Route Guard
 function Protected({ children }) {
   const { isSignedIn, isLoaded } = useUser();
   
-  if (!isLoaded) return null; // Wait for Clerk to load
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
-  // If not signed in, show the styled login instead of a white page
-  return isSignedIn ? children : (
-    <AuthWrapper>
-      <SignIn appearance={{ baseTheme: dark }} />
-    </AuthWrapper>
-  );
+  if (!isSignedIn) return <Navigate to="/login" replace />;
+  return children;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
+      {/* 🔄 Keeps MongoDB in sync with Clerk automatically */}
       <SyncUser />
 
       <Routes>
-        {/* 🔓 Public Route */}
-        <Route
-          path="/"
-          element={
-            <Layout>
-              <Home />
-            </Layout>
-          }
-        />
+        {/* --- 🔓 PUBLIC --- */}
+        <Route path="/" element={<Layout><Home /></Layout>} />
 
-        {/* 🔐 Protected Routes */}
+        {/* --- 🔑 AUTH (No Layout) --- */}
+        <Route path="/login/*" element={
+          <AuthWrapper>
+            <SignIn 
+              routing="path" 
+              path="/login" 
+              signUpUrl="/signup" 
+              fallbackRedirectUrl="/" 
+              appearance={{ baseTheme: dark }} 
+            />
+          </AuthWrapper>
+        } />
+        
+        <Route path="/signup/*" element={
+          <AuthWrapper>
+            <SignUp 
+              routing="path" 
+              path="/signup" 
+              signInUrl="/login" 
+              fallbackRedirectUrl="/" 
+              appearance={{ baseTheme: dark }} 
+            />
+          </AuthWrapper>
+        } />
+
+        {/* --- 🔐 PROTECTED (Requires Login) --- */}
         <Route path="/courses" element={<Protected><Layout><Courses /></Layout></Protected>} />
         <Route path="/admin" element={<Protected><Layout><Admin /></Layout></Protected>} />
         <Route path="/course/:id" element={<Protected><Layout><CourseDetail /></Layout></Protected>} />
@@ -59,24 +83,8 @@ export default function App() {
         <Route path="/downloads" element={<Protected><Layout><Downloads /></Layout></Protected>} />
         <Route path="/profile" element={<Protected><Layout><Profile /></Layout></Protected>} />
 
-        {/* 🔑 Auth Routes (Wrapped in styled AuthWrapper) */}
-        <Route 
-          path="/login/*" 
-          element={
-            <AuthWrapper>
-              <SignIn routing="path" path="/login" signUpUrl="/signup" appearance={{ baseTheme: dark }} />
-            </AuthWrapper>
-          } 
-        />
-        
-        <Route 
-          path="/signup/*" 
-          element={
-            <AuthWrapper>
-              <SignUp routing="path" path="/signup" signInUrl="/login" appearance={{ baseTheme: dark }} />
-            </AuthWrapper>
-          } 
-        />
+        {/* --- 🛑 CATCH-ALL --- */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

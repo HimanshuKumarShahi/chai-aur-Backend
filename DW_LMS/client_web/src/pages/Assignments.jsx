@@ -6,31 +6,30 @@ export default function Assignments() {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/course`);
-        
-        const allAssignments = res.data.reduce((acc, course) => {
-          if (course.assignments && course.assignments.length > 0) {
-            const formatted = course.assignments.map(a => ({
-              ...a,
-              courseName: course.title
-            }));
-            return [...acc, ...formatted];
-          }
-          return acc;
-        }, []);
+ useEffect(() => {
+  const fetchAssignments = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/course`
+      );
 
-        setAssignments(allAssignments);
-      } catch (err) {
-        console.error("Error fetching assignments:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAssignments();
-  }, []);
+      const allAssignments = res.data.flatMap(course =>
+        (course.assignments || []).map(a => ({
+          ...a,
+          courseName: course.title
+        }))
+      );
+
+      setAssignments(allAssignments);
+    } catch (err) {
+      console.error("Error fetching assignments:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchAssignments();
+}, []);
 
   return (
     <div className="bg-[#050505] text-white min-h-screen pb-32 selection:bg-orange-500/30">

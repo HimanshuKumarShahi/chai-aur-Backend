@@ -63,17 +63,17 @@ router.put("/:id", isAdmin, async (req, res) => {
   try {
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
+      req.body,
+      { new: true }
     );
 
     if (!updatedCourse) {
-      return res.status(404).json({ message: "Course not found" });
+      return res.status(404).json("Course not found");
     }
 
-    res.status(200).json(updatedCourse);
+    res.json(updatedCourse);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(err.message);
   }
 });
 
@@ -84,13 +84,10 @@ router.put("/:id", isAdmin, async (req, res) => {
  */
 router.delete("/:id", isAdmin, async (req, res) => {
   try {
-    const course = await Course.findByIdAndDelete(req.params.id);
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-    res.status(200).json({ message: "Course deleted successfully" });
+    await Course.findByIdAndDelete(req.params.id);
+    res.json("Course deleted");
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json(err.message);
   }
 });
 

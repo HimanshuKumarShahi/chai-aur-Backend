@@ -1,27 +1,29 @@
 import { Link, useLocation } from "react-router-dom";
 import { useUser, UserButton } from "@clerk/clerk-react";
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react"; // Added User icon
 import axios from "axios";
 import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const location = useLocation();
   const [role, setRole] = useState("user");
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (isSignedIn && user) {
       axios.get(`${import.meta.env.VITE_API_URL}/api/user/role/${user.id}`)
         .then(res => setRole(res.data.role))
         .catch(() => setRole("user"));
     }
-  }, [user]);
+  }, [isSignedIn, user]);
 
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  if (!isLoaded) return null;
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -63,16 +65,14 @@ export default function Navbar() {
 
           {/* 🛠️ RIGHT ACTIONS */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {isSignedIn && (
-              <div className="mr-1 sm:mr-2">
-                <NotificationBell />
-              </div>
-            )}
+            {isSignedIn && <NotificationBell />}
 
             <div className="hidden md:flex gap-4 items-center">
               {isSignedIn ? (
                 <div className="flex items-center gap-5 border-l border-gray-800 pl-6">
-                  <Link to="/profile" className="text-[11px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition">My Profile</Link>
+                  <Link to="/profile" className={`text-[11px] font-black uppercase tracking-widest transition hover:text-orange-500 ${location.pathname === "/profile" ? "text-orange-500" : "text-gray-400"}`}>
+                    My Profile
+                  </Link>
                   <UserButton afterSignOutUrl="/" />
                 </div>
               ) : (
@@ -99,7 +99,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 📱 MOBILE NAVIGATION OVERLAY (THE FIX) */}
+      {/* 📱 MOBILE NAVIGATION OVERLAY */}
       <div 
         className={`md:hidden absolute top-full left-0 right-0 overflow-hidden transition-all duration-300 ease-in-out bg-black/95 backdrop-blur-lg border-b border-gray-800 z-50 ${
           isOpen ? "max-h-screen opacity-100 visible" : "max-h-0 opacity-0 invisible"
@@ -107,6 +107,7 @@ export default function Navbar() {
       >
         <div className="px-6 pt-4 pb-10 space-y-1">
           <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em] mb-4">Menu</p>
+          
           {navLinks.map((link) => (
             <Link
               key={link.path}
@@ -118,6 +119,18 @@ export default function Navbar() {
               {link.name}
             </Link>
           ))}
+
+          {/* 🔥 ADDED PROFILE TO MOBILE MENU */}
+          {isSignedIn && (
+            <Link
+              to="/profile"
+              className={`block py-4 text-2xl font-black italic tracking-tighter uppercase transition-all border-t border-gray-900 ${
+                location.pathname === "/profile" ? "text-orange-500 translate-x-2" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              My Dashboard
+            </Link>
+          )}
           
           {role === "admin" && (
             <Link to="/admin" className="block py-4 text-2xl font-black italic tracking-tighter uppercase text-orange-400 border-t border-gray-900 mt-4">

@@ -21,7 +21,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "lms_assets",
-    resource_type: "auto", // 👈 IMPORTANT: This allows PDF, ZIP, and Images
+    resource_type: "auto", 
     public_id: (req, file) => `${Date.now()}-${file.originalname.split('.')[0]}`,
   },
 });
@@ -33,7 +33,7 @@ const upload = multer({ storage });
  * @desc    Admin uploads file to Cloudinary
  * Note: Use "/" here because it is mounted as /api/upload in server.js
  */
-router.post("/", isAdmin, upload.single("file"), (req, res) => {
+router.post("/", upload.single("file"), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file provided or upload failed" });
