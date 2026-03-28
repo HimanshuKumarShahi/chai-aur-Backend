@@ -1,11 +1,28 @@
 import mongoose from "mongoose";
 
 const courseSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  videoUrl: String,
-  thumbnail: String,
-  instructor: String
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  videoUrl: { type: String, required: true },
+  thumbnail: { type: String, required: true },
+  instructor: { type: String, required: true },
+  category: { type: String,  }, 
+  
+  
+  assignments: [
+    { 
+      title: String, 
+      fileUrl: String 
+    }
+  ],
+  
+  
+  resources: [
+    { 
+      title: String, 
+      fileUrl: String 
+    }
+  ]
 }, { timestamps: true });
 
 export default mongoose.model("Course", courseSchema);

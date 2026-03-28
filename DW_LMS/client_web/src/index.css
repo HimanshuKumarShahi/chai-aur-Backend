@@ -1,1 +1,8 @@
 @import "tailwindcss";
+.admin-input {
+  @apply w-full bg-black border border-gray-800 p-3 rounded-xl focus:border-orange-500 outline-none transition-all placeholder:text-gray-700;
+}
+
+.profile-input {
+  @apply w-full bg-black border border-gray-800 p-4 rounded-2xl focus:border-orange-500 outline-none transition-all placeholder:text-gray-800 text-sm font-medium;
+}
