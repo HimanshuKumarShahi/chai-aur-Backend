@@ -7,6 +7,7 @@ import userRoutes from "./routes/user.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import assignmentRoutes from "./routes/assignment.routes.js";
 import downloadRoutes from "./routes/download.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/course", courseRoutes);
 app.use("/api/assignment", assignmentRoutes);
 app.use("/api/download", downloadRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -15,7 +15,12 @@ const courseSchema = new mongoose.Schema({
       fileUrl: String 
     }
   ],
-  
+  playlist: [
+    { 
+      title: String, 
+      videoUrl: String 
+    }
+  ],
   
   resources: [
     { 
