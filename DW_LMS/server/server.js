@@ -13,9 +13,11 @@ dotenv.config();
 
 const app = express();
 app.use(cors({
-  origin: "*", // In production, replace with your frontend URL
+  // This allows it to work on localhost during dev and your Vercel URL in production
+  origin: process.env.FRONTEND_URL || "*", 
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "clerkid", "Authorization"]
+  allowedHeaders: ["Content-Type", "clerkid", "Authorization"],
+  credentials: true
 }));
 app.use(express.json());
 
