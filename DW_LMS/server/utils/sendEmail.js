@@ -50,7 +50,6 @@ export const sendWelcomeEmail = async (userEmail, userName) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Welcome Email Dispatched: ${userEmail}`);
   } catch (error) {
     console.error("❌ Nodemailer Error:", error.message);
   }
