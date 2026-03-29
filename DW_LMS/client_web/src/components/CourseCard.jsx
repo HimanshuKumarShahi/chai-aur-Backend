@@ -1,68 +1,89 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Play, User, ArrowUpRight, Sparkles, ShieldCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Play, ArrowUpRight, ShieldCheck } from "lucide-react";
 
 export default function CourseCard({ course }) {
   const navigate = useNavigate();
 
-  // Handle click to trigger auto-play on the next page
-  const handleNavigation = (e) => {
-    e.preventDefault();
+  const handleNavigation = () => {
     navigate(`/course/${course._id}`, { state: { autoStart: true } });
   };
 
   return (
-    <div 
+    <div
       onClick={handleNavigation}
-      className="group relative bg-[#070707] border border-white/5 rounded-[2rem] p-3 transition-all duration-500 hover:border-orange-500/30 hover:shadow-[0_0_40px_rgba(249,115,22,0.1)] cursor-pointer"
+      className="group relative cursor-pointer"
     >
-      {/* 🖼️ Thumbnail Container */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-[1.5rem] mb-5 bg-[#151515] z-10">
-        {/* ✨ Premium Badges */}
-        <div className="absolute top-4 left-4 z-20 flex gap-2">
-          <div className="flex items-center gap-1 bg-orange-500 text-black px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-wider shadow-xl">
-            <ShieldCheck size={10} />
-            Ads Free
-          </div>
-          <div className="bg-black/60 backdrop-blur-xl text-white/90 px-2.5 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider border border-white/10 shadow-lg">
-            {course.category || "Pro"}
-          </div>
-        </div>
+      {/* 🔥 Glow Effect */}
+      <div className="absolute inset-0 rounded-3xl bg-orange-500/0 group-hover:bg-orange-500/10 blur-2xl transition-all duration-500" />
 
-        <img 
-          src={course.thumbnail} 
-          className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110" 
-          alt={course.title}
-        />
-        
-        {/* Cinematic Play Overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all duration-500 flex items-center justify-center">
-          <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md scale-75 group-hover:scale-100 transition-transform duration-500">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-2xl">
-              <Play fill="black" size={20} className="ml-1" />
+      {/* 🔲 CARD */}
+      <div className="relative bg-[#0A0A0A] border border-white/5 rounded-3xl overflow-hidden transition-all duration-500 group-hover:border-orange-500/30 group-hover:-translate-y-1">
+
+        {/* 🎬 THUMBNAIL */}
+        <div className="relative aspect-video overflow-hidden">
+
+          {/* Image */}
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+          {/* 🏷️ BADGES */}
+          <div className="absolute top-3 left-3 flex gap-2 z-10">
+            <div className="flex items-center gap-1 bg-orange-500 text-black px-2 py-1 rounded-full text-[9px] font-bold">
+              <ShieldCheck size={10} />
+              Ads Free
+            </div>
+
+            <div className="bg-black/60 text-white px-2 py-1 rounded-full text-[9px] border border-white/10">
+              {course.category || "Course"}
+            </div>
+          </div>
+
+          {/* ▶ PLAY BUTTON */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-xl scale-90 group-hover:scale-100 transition">
+              <Play size={20} fill="black" className="ml-1" />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 📝 Content Section */}
-      <div className="px-3 pb-4 relative z-10">
-        <div className="flex items-center gap-2 mb-3">
-           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{course.instructor || "Expert"}</span>
+        {/* 📄 CONTENT */}
+        <div className="p-4 sm:p-5">
+
+          {/* Instructor */}
+          <p className="text-[12px] text-gray-500 uppercase tracking-widest mb-2">
+            {course.instructor || "Instructor"}
+          </p>
+
+          {/* Title */}
+          <h3 className="text-white text-lg sm:text-xl font-bold leading-tight mb-2 group-hover:text-orange-400 transition">
+            {course.title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-gray-500 text-xs sm:text-sm line-clamp-2 mb-4">
+            {course.description}
+          </p>
+
+          {/* CTA */}
+          <div className="flex items-center justify-between mt-auto">
+            <span className="text-[10px] uppercase tracking-wider text-gray-400">
+              Start Learning
+            </span>
+
+            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 border border-white/10 group-hover:bg-orange-500 group-hover:border-orange-500 transition">
+              <ArrowUpRight
+                size={16}
+                className="text-white group-hover:text-black transition"
+              />
+            </div>
+          </div>
         </div>
-
-        <h3 className="text-white font-extrabold text-xl mb-2 group-hover:text-orange-400 transition-colors tracking-tighter leading-tight">
-          {course.title}
-        </h3>
-        
-        <p className="text-gray-500 text-xs line-clamp-2 mb-6 font-medium leading-relaxed opacity-80 italic">
-          {course.description}
-        </p>
-
-        {/* Action Button - Also triggers navigation */}
-        <button className="group/btn relative w-full flex items-center justify-between px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 bg-white/[0.03] border border-white/10 text-white group-hover:bg-orange-500 group-hover:text-black group-hover:border-orange-500">
-          <span>Start Module</span>
-          <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-        </button>
       </div>
     </div>
   );

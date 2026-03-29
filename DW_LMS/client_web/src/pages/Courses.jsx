@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, X, Layers, SlidersHorizontal, Info } from "lucide-react";
+import {
+  Search,
+  X,
+  Layers,
+  SlidersHorizontal
+} from "lucide-react";
 import CourseCard from "../components/CourseCard";
 
 export default function Courses() {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
+
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [sort, setSort] = useState("latest");
+
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   const categories = [
     "All",
@@ -17,13 +26,17 @@ export default function Courses() {
     "JavaScript",
     "Tech",
     "Backend",
+    "AI/ML",
+    "Data Science",
+    "DevOps"
   ];
 
+  // FETCH COURSES
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/course`,
+          `${import.meta.env.VITE_API_URL}/api/course`
         );
         setCourses(res.data);
         setFilteredCourses(res.data);
@@ -36,148 +49,159 @@ export default function Courses() {
     fetchCourses();
   }, []);
 
+  // FILTER + SORT LOGIC
   useEffect(() => {
-    const searchTerm = search.toLowerCase().trim();
-    const selectedCat = activeCategory.toLowerCase();
+    let data = [...courses];
 
-    const filtered = courses.filter((c) => {
+    const term = search.toLowerCase().trim();
+
+    // SEARCH
+    data = data.filter((c) => {
       const title = (c.title || "").toLowerCase();
-      const description = (c.description || "").toLowerCase();
-      const category = (c.category || "").toLowerCase();
-
-      const isSearchMatch =
-        title.includes(searchTerm) || description.includes(searchTerm);
-      const isCategoryMatch =
-        activeCategory === "All" ||
-        category === selectedCat ||
-        title.includes(selectedCat);
-
-      return isSearchMatch && isCategoryMatch;
+      const desc = (c.description || "").toLowerCase();
+      return title.includes(term) || desc.includes(term);
     });
 
-    setFilteredCourses(filtered);
-  }, [search, activeCategory, courses]);
+    // CATEGORY
+    if (activeCategory !== "All") {
+      data = data.filter(
+        (c) =>
+          (c.category || "").toLowerCase() ===
+          activeCategory.toLowerCase()
+      );
+    }
+
+    // SORT
+    if (sort === "az") {
+      data.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort === "za") {
+      data.sort((a, b) => b.title.localeCompare(a.title));
+    } else if (sort === "latest") {
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sort === "oldest") {
+      data.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    }
+
+    setFilteredCourses(data);
+  }, [search, activeCategory, sort, courses]);
 
   return (
-    <div className="bg-[#050505] text-white min-h-screen pb-32 selection:bg-orange-500/30">
-      {/* 🏔️ Header & Hero Section */}
-      <section className="relative pt-24 pb-16 px-6 overflow-hidden">
-        {/* Background Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[300px] bg-orange-600/10 blur-[120px] -z-10" />
+    <div className="bg-[#050505] text-white min-h-screen pb-32">
 
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter leading-none">
-            EXPLORE <br />
-            <span className="text-orange-500 italic">COURSES.</span>
-          </h1>
-          <p className="text-gray-500 font-medium text-lg max-w-lg mx-auto mb-12">
-            Filter by technology or search for specific topics to accelerate
-            your career.
-          </p>
+      {/* 🔥 HERO */}
+      <section className="pt-24 pb-14 px-6 text-center">
+        <h1 className="text-5xl md:text-7xl font-black mb-6">
+          EXPLORE <span className="text-orange-500">COURSES</span>
+        </h1>
 
-          {/* 🔍 Enhanced Search Bar */}
-          <div className="relative max-w-2xl mx-auto mb-10 group">
-            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-              <Search
-                size={20}
-                className="text-gray-500 group-focus-within:text-orange-500 transition-colors"
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="What do you want to learn today?"
-              className="w-full bg-gray-900/40 backdrop-blur-xl border border-gray-800 p-5 pl-14 pr-14 rounded-2xl focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/5 outline-none transition-all placeholder:text-gray-600 font-medium text-lg shadow-2xl"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-5 top-1/2 -translate-y-1/2 p-1.5 bg-gray-800 rounded-full text-gray-400 hover:text-white transition-colors"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
+        {/* SEARCH */}
+        <div className="relative max-w-2xl mx-auto mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search courses..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 pl-12 pr-12 py-4 rounded-xl outline-none focus:border-orange-500"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
-          {/* 🏷️ Smart Filter Chips */}
-          <div className="flex flex-wrap justify-center items-center gap-3">
-            <div className="flex items-center gap-2 mr-2 text-gray-500">
-              <SlidersHorizontal size={14} />
-              <span className="text-[10px] uppercase font-bold tracking-widest">
-                Filters
-              </span>
-            </div>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-[0.1em] transition-all border ${
-                  activeCategory === cat
-                    ? "bg-white border-white text-black scale-105 shadow-xl shadow-white/10"
-                    : "bg-transparent border-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300"
-                }`}
-              >
-                {cat}
-              </button>
+        {/* FILTER TOGGLE (MOBILE) */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="md:hidden flex items-center gap-2 mx-auto bg-gray-900 px-4 py-2 rounded-xl border border-gray-800"
+        >
+          <SlidersHorizontal size={16} /> Filters
+        </button>
+
+        {/* FILTER BAR */}
+        <div
+          className={`${
+            showFilters ? "flex" : "hidden"
+          } md:flex flex-col md:flex-row gap-4 justify-center mt-6`}
+        >
+          {/* CATEGORY */}
+          <select
+            value={activeCategory}
+            onChange={(e) => setActiveCategory(e.target.value)}
+            className="bg-gray-900 border border-gray-800 px-4 py-3 rounded-xl"
+          >
+            {categories.map((c) => (
+              <option key={c}>{c}</option>
             ))}
-          </div>
+          </select>
+
+          {/* SORT */}
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="bg-gray-900 border border-gray-800 px-4 py-3 rounded-xl"
+          >
+            <option value="latest">Latest</option>
+            <option value="oldest">Oldest</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+
+          {/* CLEAR */}
+          <button
+            onClick={() => {
+              setSearch("");
+              setActiveCategory("All");
+              setSort("latest");
+            }}
+            className="bg-orange-500 text-black px-6 py-3 rounded-xl font-bold text-xs"
+          >
+            Clear
+          </button>
         </div>
       </section>
 
-      {/* 📚 Results Grid */}
+      {/* 📚 RESULTS */}
       <main className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between mb-10 px-2">
-          <div className="flex items-center gap-2">
-            <Layers size={18} className="text-orange-500" />
-            <span className="text-sm font-bold uppercase tracking-widest text-gray-400">
-              {filteredCourses.length} Courses Found
-            </span>
-          </div>
+
+        <div className="flex items-center gap-2 mb-8">
+          <Layers size={18} className="text-orange-500" />
+          <span className="text-sm text-gray-400">
+            {filteredCourses.length} Courses Found
+          </span>
         </div>
 
+        {/* LOADING */}
         {loading ? (
-          /* ✨ Improved Skeleton Loader */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="space-y-4">
-                <div className="aspect-video bg-gray-900/80 rounded-3xl animate-pulse border border-gray-800" />
-                <div className="h-6 w-3/4 bg-gray-900/80 rounded animate-pulse" />
-                <div className="h-4 w-1/2 bg-gray-900/80 rounded animate-pulse" />
-              </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 bg-gray-900 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : filteredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCourses.map((course) => (
-              <div
-                key={course._id}
-                className="hover:-translate-y-2 transition-transform duration-300"
-              >
-                <CourseCard course={course} />
-              </div>
+              <CourseCard key={course._id} course={course} />
             ))}
           </div>
         ) : (
-          /* 🚫 Zero Results View */
-          <div className="max-w-md mx-auto text-center py-24 px-8 bg-gray-900/20 rounded-[3rem] border border-dashed border-gray-800 backdrop-blur-sm">
-            <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Search size={32} className="text-gray-700" />
-            </div>
-            <h3 className="text-2xl font-black mb-2">NO MATCHES FOUND</h3>
-            <p className="text-gray-500 text-sm leading-relaxed mb-8">
-              We couldn't find anything matching{" "}
-              <span className="text-white font-bold">"{search}"</span>. Try
-              adjusting your filters or checking your spelling.
+          <div className="text-center py-20">
+            <h3 className="text-2xl font-bold mb-2">No Results</h3>
+            <p className="text-gray-500 mb-6">
+              Try changing filters or search term
             </p>
             <button
               onClick={() => {
                 setSearch("");
                 setActiveCategory("All");
               }}
-              className="bg-orange-500 text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20"
+              className="bg-orange-500 px-6 py-3 rounded-xl text-black font-bold"
             >
-              Clear All Filters
+              Reset
             </button>
           </div>
         )}
