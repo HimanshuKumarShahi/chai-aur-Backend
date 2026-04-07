@@ -6,6 +6,18 @@ export const createAccount = async (req, res) => {
   try {
     const { accountType } = req.body;
 
+    // FIX: Limit accounts to 3 per user to prevent spam
+    const existingAccountsCount = await Account.countDocuments({ userId: req.user._id });
+    if (existingAccountsCount >= 3) {
+      return res.status(400).json({ message: "Limit reached: You can only have 3 accounts." });
+    }
+
+    // FIX: Check if an account of this type already exists for the user
+    const typeExists = await Account.findOne({ userId: req.user._id, accountType: accountType || "Savings" });
+    if (typeExists) {
+      return res.status(400).json({ message: `You already have a ${accountType || "Savings"} account.` });
+    }
+
     const account = await Account.create({
       userId: req.user._id,
       accountType: accountType || "Savings",
@@ -13,7 +25,7 @@ export const createAccount = async (req, res) => {
       balance: 0,
     });
 
-    res.status(201).json({ message: "Account created", account });
+    res.status(201).json({ message: "Account created successfully", account });
   } catch (error) {
     res.status(500).json({ message: "Create failed", error: error.message });
   }
