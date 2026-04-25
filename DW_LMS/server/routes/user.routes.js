@@ -40,7 +40,7 @@ router.post("/sync", async (req, res) => {
     // 4. Return Data to Frontend
     res.status(200).json({
       user,
-      isNewUser, // Frontend uses this to trigger the Welcome Modal
+      isNewUser, 
     });
 
   } catch (err) {

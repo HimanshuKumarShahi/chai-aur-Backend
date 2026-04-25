@@ -39,7 +39,7 @@ router.post("/", upload.single("file"), (req, res) => {
       return res.status(400).json({ message: "No file provided or upload failed" });
     }
     
-    // Cloudinary returns the URL in req.file.path
+  
     res.status(200).json({ 
       url: req.file.path,
       message: "File uploaded successfully" 
